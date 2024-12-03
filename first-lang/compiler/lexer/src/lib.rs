@@ -18,7 +18,9 @@ pub enum TokenKind {
     /// `//`
     LineComment,
     /// Any literal
-    Literal { kind: LiteralKind },
+    Literal {
+        kind: LiteralKind,
+    },
     /// Any whitespace character
     Whitespace,
     /// `(`
@@ -43,9 +45,8 @@ pub enum TokenKind {
     Slash,
     /// `%`
     Percent,
-    /// any unknown character
     Unknown,
-    /// End of file
+    InvalidIdent,
     Eof,
 }
 
@@ -71,6 +72,7 @@ impl<'a> Cursor<'a> {
             '0'..='9' => self.number(),
             '(' => TokenKind::OpenParen,
             ')' => TokenKind::CloseParen,
+            '=' => TokenKind::Eq,
             '+' => TokenKind::Plus,
             '-' => TokenKind::Minus,
             '<' => TokenKind::Less,
@@ -78,6 +80,7 @@ impl<'a> Cursor<'a> {
             '!' => TokenKind::Bang,
             '%' => TokenKind::Percent,
             c if is_whitespace(c) => self.whitespace(),
+            c if !c.is_ascii() => self.invalid_ident(),
             EOF_CHAR if self.is_eof() => TokenKind::Eof,
             _ => TokenKind::Unknown,
         };
@@ -85,8 +88,9 @@ impl<'a> Cursor<'a> {
         Token::new(token_kind)
     }
 
+    /// TODO! fix problem with whitespaces and `self.bump()` at the begin of the function
     fn number(&mut self) -> TokenKind {
-        self.bump();
+        // self.bump();
 
         let mut is_float = false;
         while self.first().is_digit(10) || self.first() == '.' {
@@ -122,11 +126,21 @@ impl<'a> Cursor<'a> {
 
         TokenKind::Whitespace
     }
+
+    fn invalid_ident(&mut self) -> TokenKind {
+        self.eat_while(|c| {
+            const ZERO_WIDTH_JOINER: char = '\u{200d}';
+            !c.is_ascii() || c == ZERO_WIDTH_JOINER
+        });
+
+        TokenKind::InvalidIdent
+    }
 }
 
 pub fn is_whitespace(c: char) -> bool {
     matches!(
         c,
+        // Usual ASCII suspects
         '\u{0009}'   // \t
         | '\u{000A}' // \n
         | '\u{000B}' // vertical tab
@@ -137,9 +151,11 @@ pub fn is_whitespace(c: char) -> bool {
         // NEXT LINE from latin1
         | '\u{0085}'
 
+        // Bidi markers
         | '\u{200E}' // LEFT-TO-RIGHT MARK
         | '\u{200F}' // RIGHT-TO-LEFT MARK
 
+        // Dedicated whitespace characters from Unicode
         | '\u{2028}' // LINE SEPARATOR
         | '\u{2029}' // PARAGRAPH SEPARATOR
     )
@@ -151,23 +167,104 @@ mod tests {
 
     #[test]
     fn get_next_token_test() {
-        let mut cursor = Cursor::new("// hello\n123.45 100");
+        let mut cursor = Cursor::new(
+            "// hello \n\
+            101-100 \
+            4/2 \
+            5%2 \
+            2.1+2.2 \
+            (2!=3)",
+        );
 
+        // --- `//hello\n` ---
         assert_eq!(Token::new(TokenKind::LineComment), cursor.get_next_token());
         assert_eq!(Token::new(TokenKind::Whitespace), cursor.get_next_token());
-        assert_eq!(
-            Token::new(TokenKind::Literal {
-                kind: LiteralKind::Float
-            }),
-            cursor.get_next_token()
-        );
-        assert_eq!(Token::new(TokenKind::Whitespace), cursor.get_next_token());
+
+        // --- `101-100` ---
         assert_eq!(
             Token::new(TokenKind::Literal {
                 kind: LiteralKind::Int
             }),
             cursor.get_next_token()
         );
+        assert_eq!(Token::new(TokenKind::Minus), cursor.get_next_token());
+        assert_eq!(
+            Token::new(TokenKind::Literal {
+                kind: LiteralKind::Int
+            }),
+            cursor.get_next_token()
+        );
+
+        cursor.get_next_token();
+
+        // --- `4/2` ---
+        assert_eq!(
+            Token::new(TokenKind::Literal {
+                kind: LiteralKind::Int
+            }),
+            cursor.get_next_token()
+        );
+        assert_eq!(Token::new(TokenKind::Slash), cursor.get_next_token());
+        assert_eq!(
+            Token::new(TokenKind::Literal {
+                kind: LiteralKind::Int
+            }),
+            cursor.get_next_token()
+        );
+
+        cursor.get_next_token();
+
+        // --- `5%2` ---
+        assert_eq!(
+            Token::new(TokenKind::Literal {
+                kind: LiteralKind::Int
+            }),
+            cursor.get_next_token()
+        );
+        assert_eq!(Token::new(TokenKind::Percent), cursor.get_next_token());
+        assert_eq!(
+            Token::new(TokenKind::Literal {
+                kind: LiteralKind::Int
+            }),
+            cursor.get_next_token()
+        );
+
+        cursor.get_next_token();
+
+        // --- `2.1+2.2` ---
+        assert_eq!(
+            Token::new(TokenKind::Literal {
+                kind: LiteralKind::Float
+            }),
+            cursor.get_next_token()
+        );
+        assert_eq!(Token::new(TokenKind::Plus), cursor.get_next_token());
+        assert_eq!(
+            Token::new(TokenKind::Literal {
+                kind: LiteralKind::Float
+            }),
+            cursor.get_next_token()
+        );
+
+        cursor.get_next_token();
+
+        // --- `(2!=1)` ---
+        assert_eq!(Token::new(TokenKind::OpenParen), cursor.get_next_token());
+        assert_eq!(
+            Token::new(TokenKind::Literal {
+                kind: LiteralKind::Int
+            }),
+            cursor.get_next_token()
+        );
+        assert_eq!(Token::new(TokenKind::Bang), cursor.get_next_token());
+        assert_eq!(Token::new(TokenKind::Eq), cursor.get_next_token());
+        assert_eq!(
+            Token::new(TokenKind::Literal {
+                kind: LiteralKind::Int
+            }),
+            cursor.get_next_token()
+        );
+        assert_eq!(Token::new(TokenKind::CloseParen), cursor.get_next_token());
     }
 
     #[test]
