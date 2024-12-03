@@ -1,4 +1,4 @@
-use cursor::Cursor;
+use cursor::{Cursor, EOF_CHAR};
 
 pub mod cursor;
 
@@ -15,11 +15,37 @@ impl Token {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TokenKind {
+    /// `//`
     LineComment,
-    Func,
-    Ident,
+    /// Any literal
     Literal { kind: LiteralKind },
+    /// Any whitespace character
     Whitespace,
+    /// `(`
+    OpenParen,
+    /// `)`
+    CloseParen,
+    /// `=`
+    Eq,
+    /// `<`
+    Less,
+    /// `>`
+    Greater,
+    /// `!`
+    Bang,
+    /// `+`
+    Plus,
+    /// `-`
+    Minus,
+    /// `*`
+    Star,
+    /// `/`
+    Slash,
+    /// `%`
+    Percent,
+    /// any unknown character
+    Unknown,
+    /// End of file
     Eof,
 }
 
@@ -37,15 +63,29 @@ impl<'a> Cursor<'a> {
             None => return Token::new(TokenKind::Eof),
         };
 
-        match first_char {
-            '/' => self.line_comment(),
+        let token_kind = match first_char {
+            '/' => match self.first() {
+                '/' => self.line_comment(),
+                _ => TokenKind::Slash,
+            },
             '0'..='9' => self.number(),
+            '(' => TokenKind::OpenParen,
+            ')' => TokenKind::CloseParen,
+            '+' => TokenKind::Plus,
+            '-' => TokenKind::Minus,
+            '<' => TokenKind::Less,
+            '>' => TokenKind::Greater,
+            '!' => TokenKind::Bang,
+            '%' => TokenKind::Percent,
             c if is_whitespace(c) => self.whitespace(),
-            _ => todo!(),
-        }
+            EOF_CHAR if self.is_eof() => TokenKind::Eof,
+            _ => TokenKind::Unknown,
+        };
+
+        Token::new(token_kind)
     }
 
-    fn number(&mut self) -> Token {
+    fn number(&mut self) -> TokenKind {
         self.bump();
 
         let mut is_float = false;
@@ -61,26 +101,26 @@ impl<'a> Cursor<'a> {
         }
 
         match is_float {
-            true => Token::new(TokenKind::Literal {
+            true => TokenKind::Literal {
                 kind: LiteralKind::Float,
-            }),
-            false => Token::new(TokenKind::Literal {
+            },
+            false => TokenKind::Literal {
                 kind: LiteralKind::Int,
-            }),
+            },
         }
     }
 
-    fn line_comment(&mut self) -> Token {
+    fn line_comment(&mut self) -> TokenKind {
         self.bump();
 
         self.eat_while(|c| c != '\n');
-        Token::new(TokenKind::LineComment)
+        TokenKind::LineComment
     }
 
-    fn whitespace(&mut self) -> Token {
+    fn whitespace(&mut self) -> TokenKind {
         self.eat_while(is_whitespace);
 
-        Token::new(TokenKind::Whitespace)
+        TokenKind::Whitespace
     }
 }
 
