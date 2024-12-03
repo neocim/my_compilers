@@ -89,6 +89,7 @@ impl<'a> Cursor<'a> {
     }
 
     /// TODO! fix problem with whitespaces and `self.bump()` at the begin of the function
+    /// and update float parsing
     fn number(&mut self) -> TokenKind {
         // self.bump();
 
