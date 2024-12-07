@@ -1,10 +1,18 @@
+pub mod lexer;
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
+    /// Any literal
     LiteralExpr(LiteralExpr),
+    /// Any binary expr like `+`, `-`, etc
     BinaryExpr(BinaryExpr),
+    /// Expression to store variable
     VariableExpr(VariableExpr),
+    /// Expression to call anything
     CallExpr(CallExpr),
+    /// Function prototype (name and args)
     FuncPrototype(FuncPrototype),
+    /// Function body and it prototype
     Func(Func),
 }
 

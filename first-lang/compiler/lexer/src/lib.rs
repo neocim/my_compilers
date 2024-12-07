@@ -13,7 +13,7 @@ impl Token {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum TokenKind {
     /// `//`
     LineComment,
@@ -27,6 +27,10 @@ pub enum TokenKind {
     OpenParen,
     /// `)`
     CloseParen,
+    /// `{`
+    OpenBrace,
+    /// `}`
+    CloseBrace,
     /// `=`
     Eq,
     /// `<`
@@ -45,16 +49,18 @@ pub enum TokenKind {
     Slash,
     /// `%`
     Percent,
+    /// `;`
+    Semicolon,
     Unknown,
     InvalidIdent,
     Eof,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum LiteralKind {
-    Int,
-    Float,
-    Char,
+    Integer { val: i32 },
+    Float { val: f32 },
+    Char { val: char },
 }
 
 impl<'a> Cursor<'a> {
@@ -69,16 +75,20 @@ impl<'a> Cursor<'a> {
                 '/' => self.line_comment(),
                 _ => TokenKind::Slash,
             },
-            '0'..='9' => self.number(),
+            '0'..='9' => self.number(first_char),
             '(' => TokenKind::OpenParen,
             ')' => TokenKind::CloseParen,
+            '{' => TokenKind::OpenBrace,
+            '}' => TokenKind::CloseBrace,
             '=' => TokenKind::Eq,
             '+' => TokenKind::Plus,
             '-' => TokenKind::Minus,
+            '*' => TokenKind::Star,
             '<' => TokenKind::Less,
             '>' => TokenKind::Greater,
             '!' => TokenKind::Bang,
             '%' => TokenKind::Percent,
+            ';' => TokenKind::Semicolon,
             c if is_whitespace(c) => self.whitespace(),
             c if !c.is_ascii() => self.invalid_ident(),
             EOF_CHAR if self.is_eof() => TokenKind::Eof,
@@ -88,29 +98,25 @@ impl<'a> Cursor<'a> {
         Token::new(token_kind)
     }
 
-    /// TODO! fix problem with whitespaces and `self.bump()` at the begin of the function
-    /// and update float parsing
-    fn number(&mut self) -> TokenKind {
-        // self.bump();
+    fn number(&mut self, first_char: char) -> TokenKind {
+        let mut num_str = first_char.to_string();
 
-        let mut is_float = false;
         while self.first().is_digit(10) || self.first() == '.' {
-            let ch = match self.bump() {
-                Some(c) => c,
-                None => break,
-            };
-
-            if ch == '.' {
-                is_float = true;
+            match self.bump() {
+                Some(ch) => num_str.push(ch),
+                None => return TokenKind::Eof,
             }
         }
 
-        match is_float {
-            true => TokenKind::Literal {
-                kind: LiteralKind::Float,
+        match num_str.parse::<i32>() {
+            Ok(val) => TokenKind::Literal {
+                kind: LiteralKind::Integer { val },
             },
-            false => TokenKind::Literal {
-                kind: LiteralKind::Int,
+            Err(_) => match num_str.parse::<f32>() {
+                Ok(val) => TokenKind::Literal {
+                    kind: LiteralKind::Float { val },
+                },
+                Err(_) => unreachable!(),
             },
         }
     }
@@ -162,110 +168,107 @@ pub fn is_whitespace(c: char) -> bool {
     )
 }
 
+pub fn is_id_start(c: char) -> bool {
+    c == '_' || unicode_xid::UnicodeXID::is_xid_start(c)
+}
+
+pub fn is_id_continue(c: char) -> bool {
+    unicode_xid::UnicodeXID::is_xid_continue(c)
+}
+
+pub fn tokenize(input: &str) -> impl Iterator<Item = Token> + '_ {
+    let mut cursor = Cursor::new(input);
+    std::iter::from_fn(move || {
+        let token = cursor.get_next_token();
+        if token.kind != TokenKind::Eof {
+            Some(token)
+        } else {
+            None
+        }
+    })
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{Cursor, LiteralKind, Token, TokenKind};
+    use super::{tokenize, Cursor, LiteralKind, Token, TokenKind};
 
     #[test]
-    fn get_next_token_test() {
-        let mut cursor = Cursor::new(
-            "// hello \n\
-            101-100 \
-            4/2 \
-            5%2 \
-            2.1+2.2 \
-            (2!=3)",
-        );
+    fn check_tokens() {
+        let result: Box<[_]> = tokenize("// hello\n101-100 4/2 5%2 2.1+2.2 (2!=3) {10+(5*2)}")
+            .map(|token| token)
+            .collect();
 
-        // --- `//hello\n` ---
-        assert_eq!(Token::new(TokenKind::LineComment), cursor.get_next_token());
-        assert_eq!(Token::new(TokenKind::Whitespace), cursor.get_next_token());
-
-        // --- `101-100` ---
         assert_eq!(
-            Token::new(TokenKind::Literal {
-                kind: LiteralKind::Int
-            }),
-            cursor.get_next_token()
+            result.as_ref(),
+            [
+                // --- `101-100 ` ---
+                Token::new(TokenKind::LineComment),
+                Token::new(TokenKind::Whitespace),
+                Token::new(TokenKind::Literal {
+                    kind: LiteralKind::Integer { val: 101 }
+                }),
+                Token::new(TokenKind::Minus),
+                Token::new(TokenKind::Literal {
+                    kind: LiteralKind::Integer { val: 100 }
+                }),
+                Token::new(TokenKind::Whitespace),
+                // --- `4/2 ` ---
+                Token::new(TokenKind::Literal {
+                    kind: LiteralKind::Integer { val: 4 }
+                }),
+                Token::new(TokenKind::Slash),
+                Token::new(TokenKind::Literal {
+                    kind: LiteralKind::Integer { val: 2 }
+                }),
+                Token::new(TokenKind::Whitespace),
+                // --- `5%2 ` ---
+                Token::new(TokenKind::Literal {
+                    kind: LiteralKind::Integer { val: 5 }
+                }),
+                Token::new(TokenKind::Percent),
+                Token::new(TokenKind::Literal {
+                    kind: LiteralKind::Integer { val: 2 }
+                }),
+                Token::new(TokenKind::Whitespace),
+                // --- `2.1+2.2 ` ---
+                Token::new(TokenKind::Literal {
+                    kind: LiteralKind::Float { val: 2.1 }
+                }),
+                Token::new(TokenKind::Plus),
+                Token::new(TokenKind::Literal {
+                    kind: LiteralKind::Float { val: 2.2 }
+                }),
+                Token::new(TokenKind::Whitespace),
+                // --- `(2!=3) ` ---
+                Token::new(TokenKind::OpenParen),
+                Token::new(TokenKind::Literal {
+                    kind: LiteralKind::Integer { val: 2 }
+                }),
+                Token::new(TokenKind::Bang),
+                Token::new(TokenKind::Eq),
+                Token::new(TokenKind::Literal {
+                    kind: LiteralKind::Integer { val: 3 }
+                }),
+                Token::new(TokenKind::CloseParen),
+                Token::new(TokenKind::Whitespace),
+                // --- `{10+(5*2)}` ---
+                Token::new(TokenKind::OpenBrace),
+                Token::new(TokenKind::Literal {
+                    kind: LiteralKind::Integer { val: 10 }
+                }),
+                Token::new(TokenKind::Plus),
+                Token::new(TokenKind::OpenParen),
+                Token::new(TokenKind::Literal {
+                    kind: LiteralKind::Integer { val: 5 }
+                }),
+                Token::new(TokenKind::Star),
+                Token::new(TokenKind::Literal {
+                    kind: LiteralKind::Integer { val: 2 }
+                }),
+                Token::new(TokenKind::CloseParen),
+                Token::new(TokenKind::CloseBrace),
+            ]
         );
-        assert_eq!(Token::new(TokenKind::Minus), cursor.get_next_token());
-        assert_eq!(
-            Token::new(TokenKind::Literal {
-                kind: LiteralKind::Int
-            }),
-            cursor.get_next_token()
-        );
-
-        cursor.get_next_token();
-
-        // --- `4/2` ---
-        assert_eq!(
-            Token::new(TokenKind::Literal {
-                kind: LiteralKind::Int
-            }),
-            cursor.get_next_token()
-        );
-        assert_eq!(Token::new(TokenKind::Slash), cursor.get_next_token());
-        assert_eq!(
-            Token::new(TokenKind::Literal {
-                kind: LiteralKind::Int
-            }),
-            cursor.get_next_token()
-        );
-
-        cursor.get_next_token();
-
-        // --- `5%2` ---
-        assert_eq!(
-            Token::new(TokenKind::Literal {
-                kind: LiteralKind::Int
-            }),
-            cursor.get_next_token()
-        );
-        assert_eq!(Token::new(TokenKind::Percent), cursor.get_next_token());
-        assert_eq!(
-            Token::new(TokenKind::Literal {
-                kind: LiteralKind::Int
-            }),
-            cursor.get_next_token()
-        );
-
-        cursor.get_next_token();
-
-        // --- `2.1+2.2` ---
-        assert_eq!(
-            Token::new(TokenKind::Literal {
-                kind: LiteralKind::Float
-            }),
-            cursor.get_next_token()
-        );
-        assert_eq!(Token::new(TokenKind::Plus), cursor.get_next_token());
-        assert_eq!(
-            Token::new(TokenKind::Literal {
-                kind: LiteralKind::Float
-            }),
-            cursor.get_next_token()
-        );
-
-        cursor.get_next_token();
-
-        // --- `(2!=1)` ---
-        assert_eq!(Token::new(TokenKind::OpenParen), cursor.get_next_token());
-        assert_eq!(
-            Token::new(TokenKind::Literal {
-                kind: LiteralKind::Int
-            }),
-            cursor.get_next_token()
-        );
-        assert_eq!(Token::new(TokenKind::Bang), cursor.get_next_token());
-        assert_eq!(Token::new(TokenKind::Eq), cursor.get_next_token());
-        assert_eq!(
-            Token::new(TokenKind::Literal {
-                kind: LiteralKind::Int
-            }),
-            cursor.get_next_token()
-        );
-        assert_eq!(Token::new(TokenKind::CloseParen), cursor.get_next_token());
     }
 
     #[test]
