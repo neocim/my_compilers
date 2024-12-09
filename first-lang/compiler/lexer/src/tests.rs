@@ -2,9 +2,15 @@ use crate::{cursor::Cursor, tokenize, LiteralKind, Token, TokenKind};
 
 #[test]
 fn check_tokens() {
-    let result: Box<[_]> = tokenize("// hello\n101-100 4/2 5%2 2.1+2.2 (2!=3) {10+(5*2)};")
-        .map(|token| token)
-        .collect();
+    let input_str = "\
+// hello
+101-100
+4/2
+5%2
+2.1+2.2
+(2!=3)
+{10+(5*2)};";
+    let result: Box<[_]> = tokenize(input_str).unwrap().map(|token| token).collect();
 
     assert_eq!(
         result.as_ref(),

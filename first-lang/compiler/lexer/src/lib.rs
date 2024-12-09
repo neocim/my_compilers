@@ -1,6 +1,10 @@
+use std::num::{ParseFloatError, ParseIntError};
+
 use cursor::{Cursor, EOF_CHAR};
+use errors::{ParseErrors, ParseLiteralError};
 
 pub mod cursor;
+pub mod errors;
 mod tests;
 
 #[derive(Debug, PartialEq)]
@@ -52,6 +56,8 @@ pub enum TokenKind {
     Percent,
     /// `;`
     Semicolon,
+    /// `.`
+    Dot,
     Unknown,
     InvalidIdent,
     Eof,
@@ -65,10 +71,10 @@ pub enum LiteralKind {
 }
 
 impl<'a> Cursor<'a> {
-    pub fn get_next_token(&mut self) -> Token {
+    pub fn get_next_token(&mut self) -> Result<Token, ParseErrors> {
         let first_char = match self.bump() {
             Some(c) => c,
-            None => return Token::new(TokenKind::Eof),
+            None => return Ok(Token::new(TokenKind::Eof)),
         };
 
         let token_kind = match first_char {
@@ -76,7 +82,7 @@ impl<'a> Cursor<'a> {
                 '/' => self.line_comment(),
                 _ => TokenKind::Slash,
             },
-            '0'..='9' => self.number(first_char),
+            '0'..='9' => self.number(first_char)?,
             '(' => TokenKind::OpenParen,
             ')' => TokenKind::CloseParen,
             '{' => TokenKind::OpenBrace,
@@ -90,56 +96,74 @@ impl<'a> Cursor<'a> {
             '!' => TokenKind::Bang,
             '%' => TokenKind::Percent,
             ';' => TokenKind::Semicolon,
+            '.' => TokenKind::Dot,
             c if is_whitespace(c) => self.whitespace(),
             c if !c.is_ascii() => self.invalid_ident(),
             EOF_CHAR if self.is_eof() => TokenKind::Eof,
             _ => TokenKind::Unknown,
         };
 
-        Token::new(token_kind)
+        Ok(Token::new(token_kind))
     }
 
-    fn number(&mut self, first_char: char) -> TokenKind {
-        let mut num_str = first_char.to_string();
-        let mut has_point = false;
+    fn number(&mut self, first_digit: char) -> Result<TokenKind, ParseLiteralError> {
+        let mut num_str = first_digit.to_string();
 
-        while self.first().is_digit(10) || self.first() == '.' {
-            if self.first() == '.' {
-                match has_point {
-                    true => {
-                        self.eat_while(|c| c.is_digit(10) || c == '.');
-                        break;
-                    }
-                    false => has_point = true,
+        // all `expect()`s here are safe because we check existing of digits with `is_digit()`
+        match self.first() {
+            '.' => {
+                // eat point
+                num_str += self.bump().expect("unreachable").to_string().as_str();
+
+                if self.first().is_digit(10) {
+                    num_str += self.eat_next_digits().0.expect("unreachable").as_str();
                 }
-            }
-
-            match self.bump() {
-                Some(ch) => num_str.push(ch),
-                None => return TokenKind::Eof,
-            }
-        }
-
-        match has_point {
-            true => {
-                let val = match num_str.parse() {
-                    Ok(val) => val,
-                    Err(err) => panic!("Error while parsing float number: {err:?}"),
-                };
-                TokenKind::Literal {
+                let val = self.parse_float_num(num_str.as_str())?;
+                Ok(TokenKind::Literal {
                     kind: LiteralKind::Float { val },
-                }
+                })
             }
-            false => {
-                let val = match num_str.parse() {
-                    Ok(val) => val,
-                    Err(err) => panic!("Error while parsing integer number: {err:?}"),
-                };
-                TokenKind::Literal {
-                    kind: LiteralKind::Integer { val },
+            _ => {
+                if self.first().is_digit(10) {
+                    num_str += self.eat_next_digits().0.expect("unreachable").as_str();
                 }
+
+                let val = self.parse_integer_num(num_str.as_str())?;
+                Ok(TokenKind::Literal {
+                    kind: LiteralKind::Integer { val },
+                })
             }
         }
+    }
+
+    /// Eat all next digits and return string with this numbers
+    fn eat_next_digits(&mut self) -> (Option<String>, bool) {
+        let mut has_digits = false;
+        let mut num_str = String::new();
+
+        // `expect()` is safe because we are check existing of digits with `Cursor::first()` and `match '0'..='9'`
+        loop {
+            match self.first() {
+                '0'..='9' => {
+                    has_digits = true;
+                    num_str += &self.bump().expect("unreachable").to_string();
+                }
+                _ => break,
+            }
+        }
+
+        match has_digits {
+            true => (Some(num_str), has_digits),
+            false => (None, has_digits),
+        }
+    }
+
+    fn parse_integer_num(&self, num_str: &str) -> Result<i32, ParseIntError> {
+        num_str.parse()
+    }
+
+    fn parse_float_num(&self, num_str: &str) -> Result<f32, ParseFloatError> {
+        num_str.parse()
     }
 
     fn line_comment(&mut self) -> TokenKind {
@@ -197,14 +221,14 @@ pub fn is_ident_continue(c: char) -> bool {
     unicode_xid::UnicodeXID::is_xid_continue(c)
 }
 
-pub fn tokenize(input: &str) -> impl Iterator<Item = Token> + '_ {
+pub fn tokenize(input: &str) -> Result<impl Iterator<Item = Token> + '_, ParseErrors> {
     let mut cursor = Cursor::new(input);
-    std::iter::from_fn(move || {
-        let token = cursor.get_next_token();
+    Ok(std::iter::from_fn(move || {
+        let token = cursor.get_next_token().ok()?;
         if token.kind != TokenKind::Eof {
             Some(token)
         } else {
             None
         }
-    })
+    }))
 }
