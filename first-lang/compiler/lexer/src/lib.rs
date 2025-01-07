@@ -5,7 +5,7 @@ use errors::{ParseErrors, ParseLiteralError};
 
 pub mod cursor;
 pub mod errors;
-mod tests;
+pub mod tests;
 
 #[derive(Debug, PartialEq)]
 pub struct Token {
@@ -58,8 +58,9 @@ pub enum TokenKind {
     Semicolon,
     /// `.`
     Dot,
-    Unknown,
+    Ident,
     InvalidIdent,
+    Unknown,
     Eof,
 }
 
@@ -78,6 +79,7 @@ impl<'a> Cursor<'a> {
         };
 
         let token_kind = match first_char {
+            c if is_ident_start(c) => self.ident_or_unknown(),
             '/' => match self.first() {
                 '/' => self.line_comment(),
                 _ => TokenKind::Slash,
@@ -179,6 +181,15 @@ impl<'a> Cursor<'a> {
         TokenKind::Whitespace
     }
 
+    fn ident_or_unknown(&mut self) -> TokenKind {
+        self.eat_while(is_ident_continue);
+
+        match self.first() {
+            c if !c.is_ascii() => self.invalid_ident(),
+            _ => TokenKind::Ident,
+        }
+    }
+
     fn invalid_ident(&mut self) -> TokenKind {
         self.eat_while(|c| {
             const ZERO_WIDTH_JOINER: char = '\u{200d}';
@@ -214,7 +225,7 @@ pub fn is_whitespace(c: char) -> bool {
 }
 
 pub fn is_ident_start(c: char) -> bool {
-    c == '_' || unicode_xid::UnicodeXID::is_xid_start(c)
+    unicode_xid::UnicodeXID::is_xid_start(c)
 }
 
 pub fn is_ident_continue(c: char) -> bool {
