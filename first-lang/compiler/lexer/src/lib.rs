@@ -115,10 +115,13 @@ impl<'a> Cursor<'a> {
         match self.first() {
             '.' => {
                 // eat point
-                num_str += self.bump().expect("unreachable").to_string().as_str();
+                num_str.push(self.bump().expect("Error while processing point in number"));
 
                 if self.first().is_digit(10) {
-                    num_str += self.eat_next_digits().0.expect("unreachable").as_str();
+                    num_str += self
+                        .eat_next_digits()
+                        .expect("Error while processing next digits after point")
+                        .as_str();
                 }
                 let val = self.parse_float_num(num_str.as_str())?;
                 Ok(TokenKind::Literal {
@@ -127,7 +130,10 @@ impl<'a> Cursor<'a> {
             }
             _ => {
                 if self.first().is_digit(10) {
-                    num_str += self.eat_next_digits().0.expect("unreachable").as_str();
+                    num_str += self
+                        .eat_next_digits()
+                        .expect("Error while processing next digits after point")
+                        .as_str();
                 }
 
                 let val = self.parse_integer_num(num_str.as_str())?;
@@ -139,24 +145,21 @@ impl<'a> Cursor<'a> {
     }
 
     /// Eat all next digits and return string with this numbers
-    fn eat_next_digits(&mut self) -> (Option<String>, bool) {
-        let mut has_digits = false;
+    fn eat_next_digits(&mut self) -> Option<String> {
         let mut num_str = String::new();
 
         // `expect()` is safe because we are check existing of digits with `Cursor::first()` and `match '0'..='9'`
         loop {
             match self.first() {
-                '0'..='9' => {
-                    has_digits = true;
-                    num_str += &self.bump().expect("unreachable").to_string();
-                }
+                '0'..='9' => num_str.push(self.bump().expect("")),
                 _ => break,
             }
         }
 
-        match has_digits {
-            true => (Some(num_str), has_digits),
-            false => (None, has_digits),
+        if num_str.is_empty() {
+            Some(num_str)
+        } else {
+            None
         }
     }
 
