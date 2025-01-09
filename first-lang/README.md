@@ -2,10 +2,11 @@
     <h1><code>first-lang</code></h1>
 </div>
 
-<h2>Stage</h2>
+<h2>Stage:</h2>
 
-In development.
+**Stopped**
 
+My ideas was too complicated, so I decided to write something simpler before finishing this compiler: [calculator](https://github.com/neocim/my_compilers/tree/master/calculator).
 
 <h2>Description</h2>
 
