@@ -1,20 +1,36 @@
-#[derive(Clone, Copy, Debug)]
-pub enum Token {
-    Lit { kind: LiteralKind },
-    Op { kind: OpKind },
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Token {
+    pub kind: TokenKind,
 }
 
-#[derive(Clone, Copy, Debug)]
+impl Token {
+    pub fn new(kind: TokenKind) -> Self {
+        Self { kind }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum TokenKind {
+    Lit { kind: LiteralKind },
+    Op { kind: OpKind },
+    OpenParen,
+    CloseParen,
+    Whitespace,
+    Eof,
+    Unknown,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum OpKind {
     Star,
     Slash,
     Percent,
     Plus,
-    Minux,
+    Minus,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum LiteralKind {
-    Int { val: i32 },
-    Float { val: f32 },
+    Int { val: String },
+    Float { val: String },
 }
