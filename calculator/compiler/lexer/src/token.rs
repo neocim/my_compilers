@@ -12,21 +12,16 @@ impl Token {
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum TokenKind {
     Lit { kind: LiteralKind },
-    Op { kind: OpKind },
-    OpenParen,
-    CloseParen,
-    Whitespace,
-    Eof,
-    Unknown,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub enum OpKind {
     Star,
     Slash,
     Percent,
     Plus,
     Minus,
+    OpenParen,
+    CloseParen,
+    Whitespace,
+    Eof,
+    Unknown,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]

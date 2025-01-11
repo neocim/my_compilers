@@ -1,7 +1,7 @@
 mod tests;
 mod token;
 
-use token::{LiteralKind, OpKind, Token, TokenKind};
+use token::{LiteralKind, Token, TokenKind};
 
 use std::str::Chars;
 
@@ -26,17 +26,11 @@ impl<'a> Lexer<'a> {
 
         let kind = match ch {
             '0'..'9' => self.parse_num(ch),
-            '+' => TokenKind::Op { kind: OpKind::Plus },
-            '-' => TokenKind::Op {
-                kind: OpKind::Minus,
-            },
-            '*' => TokenKind::Op { kind: OpKind::Star },
-            '/' => TokenKind::Op {
-                kind: OpKind::Slash,
-            },
-            '%' => TokenKind::Op {
-                kind: OpKind::Percent,
-            },
+            '+' => TokenKind::Plus,
+            '-' => TokenKind::Minus,
+            '*' => TokenKind::Star,
+            '/' => TokenKind::Slash,
+            '%' => TokenKind::Percent,
             '(' => TokenKind::OpenParen,
             ')' => TokenKind::CloseParen,
             ch if is_whitespace(ch) => self.whitespace(),
@@ -48,12 +42,12 @@ impl<'a> Lexer<'a> {
 
     pub fn parse_num(&mut self, first_digit: char) -> TokenKind {
         let mut str_number = String::from(first_digit);
-        // eat next digits if there are any
+        // Eat next digits if there are any
         str_number.push_str(self.eat_next_digits().as_str());
 
         match self.first() {
             '.' => {
-                // we check above that there is point
+                // We check above that there is a point
                 str_number.push(self.eat_next().expect("Error while processing point"));
                 str_number.push_str(self.eat_next_digits().as_str());
 
