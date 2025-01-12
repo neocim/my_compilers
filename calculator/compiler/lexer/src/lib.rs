@@ -25,7 +25,7 @@ impl<'a> Lexer<'a> {
         };
 
         let kind = match ch {
-            '0'..'9' => self.parse_num(ch),
+            '0'..'9' => self.eat_num(ch),
             '+' => TokenKind::Plus,
             '-' => TokenKind::Minus,
             '*' => TokenKind::Star,
@@ -40,7 +40,7 @@ impl<'a> Lexer<'a> {
         Token::new(kind)
     }
 
-    pub fn parse_num(&mut self, first_digit: char) -> TokenKind {
+    fn eat_num(&mut self, first_digit: char) -> TokenKind {
         let mut str_number = String::from(first_digit);
         // Eat next digits if there are any
         str_number.push_str(self.eat_next_digits().as_str());
@@ -61,7 +61,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    pub fn eat_next_digits(&mut self) -> String {
+    fn eat_next_digits(&mut self) -> String {
         let mut str_number = String::new();
 
         loop {
@@ -85,7 +85,7 @@ impl<'a> Lexer<'a> {
         TokenKind::Whitespace
     }
 
-    pub fn eat_while(&mut self, condition: impl Fn(char) -> bool) {
+    fn eat_while(&mut self, condition: impl Fn(char) -> bool) {
         while condition(self.first()) && !self.is_eof() {
             self.eat_next();
         }
