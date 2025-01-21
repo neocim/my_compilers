@@ -1,0 +1,1 @@
+/home/den/Documents/Code/my_compilers/calculator/compiler/target/debug/compiler: /home/den/Documents/Code/my_compilers/calculator/compiler/src/lexer/tests.rs /home/den/Documents/Code/my_compilers/calculator/compiler/src/lexer/token.rs /home/den/Documents/Code/my_compilers/calculator/compiler/src/lexer.rs /home/den/Documents/Code/my_compilers/calculator/compiler/src/main.rs
