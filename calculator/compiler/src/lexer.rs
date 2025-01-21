@@ -1,12 +1,18 @@
 mod tests;
-mod token;
+pub mod token;
 
-use token::{LiteralKind, Token, TokenKind};
+use token::{
+    LiteralKind,
+    OpKind::{Minus, Percent, Plus, Slash, Star},
+    Token,
+    TokenKind::{self, CloseParen, Eof, Lit, Op, OpenParen, Unknown, Whitespace},
+};
 
 use std::str::Chars;
 
 pub const EOF_CHAR: char = '\0';
 
+#[derive(Clone, Debug)]
 pub struct Lexer<'a> {
     input: Chars<'a>,
 }
@@ -21,20 +27,20 @@ impl<'a> Lexer<'a> {
     pub fn next_token(&mut self) -> Token {
         let ch = match self.eat_next() {
             Some(ch) => ch,
-            None => return Token::new(TokenKind::Eof),
+            None => return Token::new(Eof),
         };
 
         let kind = match ch {
             '0'..'9' => self.eat_num(ch),
-            '+' => TokenKind::Plus,
-            '-' => TokenKind::Minus,
-            '*' => TokenKind::Star,
-            '/' => TokenKind::Slash,
-            '%' => TokenKind::Percent,
-            '(' => TokenKind::OpenParen,
-            ')' => TokenKind::CloseParen,
+            '+' => Op { kind: Plus },
+            '-' => Op { kind: Minus },
+            '*' => Op { kind: Star },
+            '/' => Op { kind: Slash },
+            '%' => Op { kind: Percent },
+            '(' => OpenParen,
+            ')' => CloseParen,
             ch if is_whitespace(ch) => self.whitespace(),
-            _ => TokenKind::Unknown,
+            _ => Unknown,
         };
 
         Token::new(kind)
@@ -51,11 +57,11 @@ impl<'a> Lexer<'a> {
                 str_number.push(self.eat_next().expect("Error while processing point"));
                 str_number.push_str(self.eat_next_digits().as_str());
 
-                TokenKind::Lit {
+                Lit {
                     kind: LiteralKind::Float { val: str_number },
                 }
             }
-            _ => TokenKind::Lit {
+            _ => Lit {
                 kind: LiteralKind::Int { val: str_number },
             },
         }
@@ -82,7 +88,7 @@ impl<'a> Lexer<'a> {
     fn whitespace(&mut self) -> TokenKind {
         self.eat_while(is_whitespace);
 
-        TokenKind::Whitespace
+        Whitespace
     }
 
     fn eat_while(&mut self, condition: impl Fn(char) -> bool) {
@@ -94,7 +100,7 @@ impl<'a> Lexer<'a> {
     pub fn tokenize(&mut self) -> impl Iterator<Item = Token> + use<'a, '_> {
         std::iter::from_fn(|| {
             let token = self.next_token();
-            if token.kind != TokenKind::Eof {
+            if token.kind != Eof {
                 Some(token)
             } else {
                 None
