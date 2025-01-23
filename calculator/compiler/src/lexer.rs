@@ -1,23 +1,76 @@
 mod tests;
 pub mod token;
 
+use crate::ast::token::{BinOpKind, LiteralKind as AstLiteralKind, Token as AstToken};
 use token::{
-    LiteralKind,
-    OpKind::{Minus, Percent, Plus, Slash, Star},
-    Token,
-    TokenKind::{self, CloseParen, Eof, Lit, Op, OpenParen, Unknown, Whitespace},
+    LiteralKind, Token,
+    TokenKind::{self, *},
 };
 
 use std::str::Chars;
 
 pub const EOF_CHAR: char = '\0';
 
+impl From<TokenKind> for AstToken {
+    fn from(value: TokenKind) -> Self {
+        loop {
+            return match value {
+                Lit { kind } => match kind {
+                    LiteralKind::Int { val } => AstToken::Lit {
+                        kind: AstLiteralKind::Int { val },
+                    },
+                    LiteralKind::Float { val } => AstToken::Lit {
+                        kind: AstLiteralKind::Float { val },
+                    },
+                },
+                Star => AstToken::BinOp(BinOpKind::Mul),
+                Slash => AstToken::BinOp(BinOpKind::Div),
+                Percent => AstToken::BinOp(BinOpKind::Mod),
+                Plus => AstToken::BinOp(BinOpKind::Add),
+                Minus => AstToken::BinOp(BinOpKind::Sub),
+                OpenParen => AstToken::OpenParen,
+                CloseParen => AstToken::CloseParen,
+                Whitespace => continue,
+                Eof => AstToken::Eof,
+                Unknown => AstToken::Unknown,
+            };
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct Lexer<'a> {
-    input: Chars<'a>,
+    cursor: Cursor<'a>,
 }
 
 impl<'a> Lexer<'a> {
+    pub fn next_token(&mut self) -> AstToken {
+        loop {
+            let token = self.cursor.next_token();
+
+            let kind = match token.kind {
+                Lit { kind } => todo!(),
+                Star => todo!(),
+                Slash => todo!(),
+                Percent => todo!(),
+                Plus => todo!(),
+                Minus => todo!(),
+                OpenParen => todo!(),
+                CloseParen => todo!(),
+                Whitespace => todo!(),
+                Eof => todo!(),
+                Unknown => todo!(),
+            };
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Cursor<'a> {
+    input: Chars<'a>,
+}
+
+impl<'a> Cursor<'a> {
     pub fn new(input: &'a str) -> Self {
         Self {
             input: input.chars(),
@@ -32,11 +85,11 @@ impl<'a> Lexer<'a> {
 
         let kind = match ch {
             '0'..'9' => self.eat_num(ch),
-            '+' => Op { kind: Plus },
-            '-' => Op { kind: Minus },
-            '*' => Op { kind: Star },
-            '/' => Op { kind: Slash },
-            '%' => Op { kind: Percent },
+            '+' => Plus,
+            '-' => Minus,
+            '*' => Star,
+            '/' => Slash,
+            '%' => Percent,
             '(' => OpenParen,
             ')' => CloseParen,
             ch if is_whitespace(ch) => self.whitespace(),

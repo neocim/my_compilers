@@ -3,15 +3,15 @@
 use crate::{
     helpers::test::DebugHelper,
     lexer::{
-        token::{LiteralKind, OpKind, Token, TokenKind},
-        Lexer,
+        token::{LiteralKind, Token, TokenKind},
+        Cursor,
     },
 };
 
 #[test]
-fn lexer_tests() {
+fn cursor_test() {
     let input = "123.4 * 5 + (6789.12345 - 600)";
-    let mut lexer = Lexer::new(input);
+    let mut lexer = Cursor::new(input);
     let token_stream: Vec<_> = lexer.tokenize().collect();
     let token_stream = DebugHelper::new(&token_stream);
 
@@ -27,7 +27,7 @@ fn lexer_tests() {
                     },
                 }),
                 Token::new(TokenKind::Whitespace),
-                Token::new(TokenKind::Op { kind: OpKind::Star }),
+                Token::new(TokenKind::Star),
                 Token::new(TokenKind::Whitespace),
                 Token::new(TokenKind::Lit {
                     kind: LiteralKind::Int {
@@ -35,7 +35,7 @@ fn lexer_tests() {
                     },
                 }),
                 Token::new(TokenKind::Whitespace),
-                Token::new(TokenKind::Op { kind: OpKind::Plus }),
+                Token::new(TokenKind::Plus),
                 Token::new(TokenKind::Whitespace),
                 // `(6789.12345 - 600)`
                 Token::new(TokenKind::OpenParen),
@@ -45,9 +45,7 @@ fn lexer_tests() {
                     },
                 }),
                 Token::new(TokenKind::Whitespace),
-                Token::new(TokenKind::Op {
-                    kind: OpKind::Minus
-                }),
+                Token::new(TokenKind::Minus),
                 Token::new(TokenKind::Whitespace),
                 Token::new(TokenKind::Lit {
                     kind: LiteralKind::Int {
