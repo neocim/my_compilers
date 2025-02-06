@@ -2,7 +2,7 @@ use crate::ast::TokenStream;
 
 #[derive(Clone, Debug)]
 pub struct Parser {
-    lexer: TokenStream,
+    token_stream: TokenStream,
 }
 
 impl Parser {

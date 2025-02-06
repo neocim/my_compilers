@@ -4,7 +4,7 @@ use crate::{
     helpers::test::DebugHelper,
     lexer::{
         token::{LiteralKind, Token, TokenKind},
-        Cursor,
+        cursor::Cursor,
     },
 };
 
