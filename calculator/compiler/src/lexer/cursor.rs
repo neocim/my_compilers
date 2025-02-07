@@ -1,6 +1,10 @@
 use std::str::Chars;
 
-use super::{is_whitespace, token::{LiteralKind, Token}, EOF_CHAR};
+use super::{
+    is_whitespace,
+    token::{LiteralKind, Token},
+    EOF_CHAR,
+};
 
 #[derive(Clone, Debug)]
 pub struct Cursor<'a> {
@@ -110,18 +114,5 @@ impl<'a> Cursor<'a> {
 
     fn first(&self) -> char {
         self.input.clone().next().unwrap_or(EOF_CHAR)
-    }
-
-    fn second(&self) -> char {
-        let mut iter = self.input.clone();
-        iter.next();
-        iter.next().unwrap_or(EOF_CHAR)
-    }
-
-    fn third(&self) -> char {
-        let mut iter = self.input.clone();
-        iter.next();
-        iter.next();
-        iter.next().unwrap_or(EOF_CHAR)
     }
 }

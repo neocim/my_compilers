@@ -22,3 +22,9 @@ pub struct BinOp {
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct TokenStream(pub Vec<Token>);
+
+impl TokenStream {
+    pub fn new(stream: Vec<Token>) -> Self {
+        Self(stream)
+    }
+}

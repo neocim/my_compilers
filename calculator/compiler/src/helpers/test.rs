@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-/// This is a struct for simplifying the debugging of a large number of tokens.
+/// This is a struct for simplifying the debugging of a large number of tokens/something else.
 /// For example, in case of an test error, we will see not this:
 /// ```
 /// assertion `left == right` failed

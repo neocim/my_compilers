@@ -1,13 +1,13 @@
+mod cursor;
 mod tests;
 pub mod token;
-mod cursor;
 
-use crate::ast::token::{BinOpKind, LiteralKind as AstLiteralKind, Token as AstToken};
-use token::{
-    LiteralKind,
-    Token,
+use crate::ast::{
+    token::{BinOpKind, LiteralKind as AstLiteralKind, Token as AstToken},
+    TokenStream,
 };
 use crate::lexer::cursor::Cursor;
+use token::{LiteralKind, Token};
 
 pub const EOF_CHAR: char = '\0';
 
@@ -44,11 +44,16 @@ pub struct Lexer<'a> {
 }
 
 impl<'a> Lexer<'a> {
-    pub fn next_token(&mut self) -> AstToken {
+    pub fn new(input: &'a str) -> Self {
+        Self {
+            cursor: Cursor::new(input),
+        }
+    }
+    fn next_token(&mut self) -> AstToken {
         loop {
             let token = self.cursor.next_token();
 
-            let kind = match token {
+            let token = match token {
                 Token::Lit { kind } => AstToken::from(Token::Lit { kind }),
                 Token::Star => AstToken::from(Token::Star),
                 Token::Slash => AstToken::from(Token::Slash),
@@ -57,10 +62,26 @@ impl<'a> Lexer<'a> {
                 Token::Minus => AstToken::from(Token::Minus),
                 Token::OpenParen => AstToken::from(Token::OpenParen),
                 Token::CloseParen => AstToken::from(Token::CloseParen),
-                Token::Whitespace => AstToken::from(Token::Whitespace),
+                // Skip all whitespaces
+                Token::Whitespace => continue,
                 Token::Eof => AstToken::from(Token::Eof),
                 Token::Unknown => AstToken::from(Token::Unknown),
             };
+
+            break token;
+        }
+    }
+
+    pub fn token_stream(&mut self) -> TokenStream {
+        let mut buf = Vec::new();
+
+        loop {
+            match self.next_token() {
+                AstToken::Eof => return TokenStream::new(buf),
+                token => {
+                    buf.push(token);
+                }
+            }
         }
     }
 }
