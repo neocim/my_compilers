@@ -1,6 +1,6 @@
 use std::str::Chars;
 
-use super::{is_whitespace, token::{LiteralKind, Token, TokenKind}, EOF_CHAR};
+use super::{is_whitespace, token::{LiteralKind, Token}, EOF_CHAR};
 
 #[derive(Clone, Debug)]
 pub struct Cursor<'a> {
@@ -17,26 +17,26 @@ impl<'a> Cursor<'a> {
     pub fn next_token(&mut self) -> Token {
         let ch = match self.eat_next() {
             Some(ch) => ch,
-            None => return Token::new(TokenKind::Eof),
+            None => return Token::Eof,
         };
 
-        let kind = match ch {
+        let token = match ch {
             '0'..'9' => self.eat_num(ch),
-            '+' => TokenKind::Plus,
-            '-' => TokenKind::Minus,
-            '*' => TokenKind::Star,
-            '/' => TokenKind::Slash,
-            '%' => TokenKind::Percent,
-            '(' => TokenKind::OpenParen,
-            ')' => TokenKind::CloseParen,
+            '+' => Token::Plus,
+            '-' => Token::Minus,
+            '*' => Token::Star,
+            '/' => Token::Slash,
+            '%' => Token::Percent,
+            '(' => Token::OpenParen,
+            ')' => Token::CloseParen,
             ch if is_whitespace(ch) => self.whitespace(),
-            _ => TokenKind::Unknown,
+            _ => Token::Unknown,
         };
 
-        Token::new(kind)
+        token
     }
 
-    fn eat_num(&mut self, first_digit: char) -> TokenKind {
+    fn eat_num(&mut self, first_digit: char) -> Token {
         let mut str_number = String::from(first_digit);
         // Eat next digits if there are any
         str_number.push_str(self.eat_next_digits().as_str());
@@ -47,11 +47,11 @@ impl<'a> Cursor<'a> {
                 str_number.push(self.eat_next().expect("Error while processing point"));
                 str_number.push_str(self.eat_next_digits().as_str());
 
-                TokenKind::Lit {
+                Token::Lit {
                     kind: LiteralKind::Float { val: str_number },
                 }
             }
-            _ => TokenKind::Lit {
+            _ => Token::Lit {
                 kind: LiteralKind::Int { val: str_number },
             },
         }
@@ -75,10 +75,10 @@ impl<'a> Cursor<'a> {
         str_number
     }
 
-    fn whitespace(&mut self) -> TokenKind {
+    fn whitespace(&mut self) -> Token {
         self.eat_while(is_whitespace);
 
-        TokenKind::Whitespace
+        Token::Whitespace
     }
 
     fn eat_while(&mut self, condition: impl Fn(char) -> bool) {
@@ -90,7 +90,7 @@ impl<'a> Cursor<'a> {
     pub fn tokenize(&mut self) -> impl Iterator<Item = Token> + use<'a, '_> {
         std::iter::from_fn(|| {
             let token = self.next_token();
-            if token.kind != TokenKind::Eof {
+            if token != Token::Eof {
                 Some(token)
             } else {
                 None

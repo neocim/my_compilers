@@ -1,16 +1,5 @@
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Token {
-    pub kind: TokenKind,
-}
-
-impl Token {
-    pub fn new(kind: TokenKind) -> Self {
-        Self { kind }
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub enum TokenKind {
+pub enum Token {
     Lit { kind: LiteralKind },
     Star,
     Slash,

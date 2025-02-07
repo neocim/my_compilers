@@ -5,17 +5,17 @@ mod cursor;
 use crate::ast::token::{BinOpKind, LiteralKind as AstLiteralKind, Token as AstToken};
 use token::{
     LiteralKind,
-    TokenKind,
+    Token,
 };
 use crate::lexer::cursor::Cursor;
 
 pub const EOF_CHAR: char = '\0';
 
-impl From<TokenKind> for AstToken {
-    fn from(value: TokenKind) -> Self {
+impl From<Token> for AstToken {
+    fn from(value: Token) -> Self {
         loop {
             return match value {
-                TokenKind::Lit { kind } => match kind {
+                Token::Lit { kind } => match kind {
                     LiteralKind::Int { val } => AstToken::Lit {
                         kind: AstLiteralKind::Int { val },
                     },
@@ -23,16 +23,16 @@ impl From<TokenKind> for AstToken {
                         kind: AstLiteralKind::Float { val },
                     },
                 },
-                TokenKind::Star => AstToken::BinOp(BinOpKind::Mul),
-                TokenKind::Slash => AstToken::BinOp(BinOpKind::Div),
-                TokenKind::Percent => AstToken::BinOp(BinOpKind::Mod),
-                TokenKind::Plus => AstToken::BinOp(BinOpKind::Add),
-                TokenKind::Minus => AstToken::BinOp(BinOpKind::Sub),
-                TokenKind::OpenParen => AstToken::OpenParen,
-                TokenKind::CloseParen => AstToken::CloseParen,
-                TokenKind::Whitespace => continue,
-                TokenKind::Eof => AstToken::Eof,
-                TokenKind::Unknown => AstToken::Unknown,
+                Token::Star => AstToken::BinOp(BinOpKind::Mul),
+                Token::Slash => AstToken::BinOp(BinOpKind::Div),
+                Token::Percent => AstToken::BinOp(BinOpKind::Mod),
+                Token::Plus => AstToken::BinOp(BinOpKind::Add),
+                Token::Minus => AstToken::BinOp(BinOpKind::Sub),
+                Token::OpenParen => AstToken::OpenParen,
+                Token::CloseParen => AstToken::CloseParen,
+                Token::Whitespace => continue,
+                Token::Eof => AstToken::Eof,
+                Token::Unknown => AstToken::Unknown,
             };
         }
     }
@@ -48,18 +48,18 @@ impl<'a> Lexer<'a> {
         loop {
             let token = self.cursor.next_token();
 
-            let kind = match token.kind {
-                TokenKind::Lit { kind } => todo!(),
-                TokenKind::Star => todo!(),
-                TokenKind::Slash => todo!(),
-                TokenKind::Percent => todo!(),
-                TokenKind::Plus => todo!(),
-                TokenKind::Minus => todo!(),
-                TokenKind::OpenParen => todo!(),
-                TokenKind::CloseParen => todo!(),
-                TokenKind::Whitespace => todo!(),
-                TokenKind::Eof => todo!(),
-                TokenKind::Unknown => todo!(),
+            let kind = match token {
+                Token::Lit { kind } => AstToken::from(Token::Lit { kind }),
+                Token::Star => AstToken::from(Token::Star),
+                Token::Slash => AstToken::from(Token::Slash),
+                Token::Percent => AstToken::from(Token::Percent),
+                Token::Plus => AstToken::from(Token::Plus),
+                Token::Minus => AstToken::from(Token::Minus),
+                Token::OpenParen => AstToken::from(Token::OpenParen),
+                Token::CloseParen => AstToken::from(Token::CloseParen),
+                Token::Whitespace => AstToken::from(Token::Whitespace),
+                Token::Eof => AstToken::from(Token::Eof),
+                Token::Unknown => AstToken::from(Token::Unknown),
             };
         }
     }
