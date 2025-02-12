@@ -1,7 +1,12 @@
 #![cfg(test)]
 
+use std::collections::VecDeque;
+
 use crate::{
-    ast::token::{BinOpKind, LiteralKind as AstLiteralKind, Token as AstToken},
+    ast::{
+        token::{BinOpKind, LiteralKind as AstLiteralKind, Token as AstToken},
+        TokenStream,
+    },
     helpers::test::DebugHelper,
     lexer::{
         cursor::Cursor,
@@ -67,50 +72,64 @@ fn lexer_token_stream_test() {
 
     assert_eq!(
         DebugHelper::new(&result.0),
-        DebugHelper::new(
-            vec![
-                // `123 + 54321 -`
-                AstToken::Lit {
-                    kind: AstLiteralKind::Int {
-                        val: "123".to_string(),
-                    },
+        DebugHelper::new(&VecDeque::from(vec![
+            // `123 + 54321 -`
+            AstToken::Lit {
+                kind: AstLiteralKind::Int {
+                    val: "123".to_string(),
                 },
-                AstToken::BinOp(BinOpKind::Add),
-                AstToken::Lit {
-                    kind: AstLiteralKind::Int {
-                        val: "54321".to_string(),
-                    },
+            },
+            AstToken::BinOp(BinOpKind::Add),
+            AstToken::Lit {
+                kind: AstLiteralKind::Int {
+                    val: "54321".to_string(),
                 },
-                AstToken::BinOp(BinOpKind::Sub),
-                // `( 1.123456789 ) * 3 /`
-                AstToken::OpenParen,
-                AstToken::Lit {
-                    kind: AstLiteralKind::Float {
-                        val: "1.123456789".to_string(),
-                    },
+            },
+            AstToken::BinOp(BinOpKind::Sub),
+            // `( 1.123456789 ) * 3 /`
+            AstToken::OpenParen,
+            AstToken::Lit {
+                kind: AstLiteralKind::Float {
+                    val: "1.123456789".to_string(),
                 },
-                AstToken::CloseParen,
-                AstToken::BinOp(BinOpKind::Mul),
-                AstToken::Lit {
-                    kind: AstLiteralKind::Int {
-                        val: "3".to_string(),
-                    },
+            },
+            AstToken::CloseParen,
+            AstToken::BinOp(BinOpKind::Mul),
+            AstToken::Lit {
+                kind: AstLiteralKind::Int {
+                    val: "3".to_string(),
                 },
-                AstToken::BinOp(BinOpKind::Div),
-                // `1 % 10`
-                AstToken::Lit {
-                    kind: AstLiteralKind::Int {
-                        val: "1".to_string(),
-                    },
+            },
+            AstToken::BinOp(BinOpKind::Div),
+            // `1 % 10`
+            AstToken::Lit {
+                kind: AstLiteralKind::Int {
+                    val: "1".to_string(),
                 },
-                AstToken::BinOp(BinOpKind::Mod),
-                AstToken::Lit {
-                    kind: AstLiteralKind::Int {
-                        val: "10".to_string(),
-                    },
+            },
+            AstToken::BinOp(BinOpKind::Mod),
+            AstToken::Lit {
+                kind: AstLiteralKind::Int {
+                    val: "10".to_string(),
                 },
-            ]
-            .as_ref()
-        )
+            },
+        ]))
+    );
+}
+
+#[test]
+fn test_token_stream_next() {
+    let mut stream = TokenStream::new(VecDeque::from(vec![
+        AstToken::BinOp(BinOpKind::Add),
+        AstToken::BinOp(BinOpKind::Sub),
+        AstToken::BinOp(BinOpKind::Div),
+    ]));
+
+    assert_eq!(stream.next().unwrap(), AstToken::BinOp(BinOpKind::Add));
+    assert_eq!(stream.next().unwrap(), AstToken::BinOp(BinOpKind::Sub));
+    // make sure that we are not advancing in the cloned field
+    assert_eq!(
+        stream.0.into_iter().next().unwrap(),
+        AstToken::BinOp(BinOpKind::Div)
     );
 }

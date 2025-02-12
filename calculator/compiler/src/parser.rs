@@ -1,4 +1,16 @@
-use crate::ast::TokenStream;
+use crate::ast::{token::Token, TokenStream};
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct TokenCursor {
+    token_stream: TokenStream,
+    cur_tok: Token,
+}
+
+impl TokenCursor {
+    pub fn advance(&mut self) {
+        let token = self.token_stream.next();
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct Parser {
@@ -6,8 +18,10 @@ pub struct Parser {
 }
 
 impl Parser {
-    pub fn parse(&self) {
-        todo!()
+    pub fn parse(&mut self) {
+        loop {
+            let token = self.token_stream.next();
+        }
     }
     pub fn parse_stmt(&self) {}
     pub fn parse_expr(&self) {}

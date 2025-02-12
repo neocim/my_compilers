@@ -2,6 +2,8 @@ mod cursor;
 mod tests;
 pub mod token;
 
+use std::collections::VecDeque;
+
 use crate::ast::{
     token::{BinOpKind, LiteralKind as AstLiteralKind, Token as AstToken},
     TokenStream,
@@ -77,7 +79,7 @@ impl<'a> Lexer<'a> {
 
         loop {
             match self.next_token() {
-                AstToken::Eof => return TokenStream::new(buf),
+                AstToken::Eof => return TokenStream::new(VecDeque::from(buf)),
                 token => {
                     buf.push(token);
                 }
