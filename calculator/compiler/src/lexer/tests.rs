@@ -72,7 +72,7 @@ fn lexer_token_stream_test() {
 
     assert_eq!(
         DebugHelper::new(&result.0),
-        DebugHelper::new(&VecDeque::from(vec![
+        DebugHelper::new(&VecDeque::from([
             // `123 + 54321 -`
             AstToken::Lit {
                 kind: AstLiteralKind::Int {
@@ -119,17 +119,15 @@ fn lexer_token_stream_test() {
 
 #[test]
 fn test_token_stream_next() {
-    let mut stream = TokenStream::new(VecDeque::from(vec![
+    let mut stream = TokenStream::new(VecDeque::from([
         AstToken::BinOp(BinOpKind::Add),
         AstToken::BinOp(BinOpKind::Sub),
         AstToken::BinOp(BinOpKind::Div),
     ]));
 
-    assert_eq!(stream.next().unwrap(), AstToken::BinOp(BinOpKind::Add));
-    assert_eq!(stream.next().unwrap(), AstToken::BinOp(BinOpKind::Sub));
+    assert_eq!(stream.next(), Some(AstToken::BinOp(BinOpKind::Add)));
+    assert_eq!(stream.next(), Some(AstToken::BinOp(BinOpKind::Sub)));
+    assert_eq!(stream.next(), Some(AstToken::BinOp(BinOpKind::Div)));
     // make sure that we are not advancing in the cloned field
-    assert_eq!(
-        stream.0.into_iter().next().unwrap(),
-        AstToken::BinOp(BinOpKind::Div)
-    );
+    assert_eq!(stream.0.into_iter().next(), None);
 }
