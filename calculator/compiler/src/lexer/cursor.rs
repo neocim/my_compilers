@@ -33,6 +33,7 @@ impl<'a> Cursor<'a> {
             '%' => Token::Percent,
             '(' => Token::OpenParen,
             ')' => Token::CloseParen,
+            EOF_CHAR => Token::Eof,
             ch if is_whitespace(ch) => self.whitespace(),
             _ => Token::Unknown,
         };
