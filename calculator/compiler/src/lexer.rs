@@ -51,6 +51,7 @@ impl<'a> Lexer<'a> {
             cursor: Cursor::new(input),
         }
     }
+
     fn next_token(&mut self) -> AstToken {
         loop {
             let token = self.cursor.next_token();

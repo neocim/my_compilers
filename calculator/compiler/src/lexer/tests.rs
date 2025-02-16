@@ -67,7 +67,7 @@ fn cursor_test() {
 
 #[test]
 fn lexer_token_stream_test() {
-    let mut lexer = Lexer::new("123 + 54321 - ( 1.123456789 ) * 3 / 1 % 10");
+    let mut lexer = Lexer::new("123    + 54321 - (        1.123456789 ) * 3 / 1 % 10");
     let result = lexer.token_stream();
 
     assert_eq!(
