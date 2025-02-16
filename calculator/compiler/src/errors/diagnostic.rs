@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use super::emitter::Emitter;
 
 pub trait IntoDiag<E: Emitter + Copy> {
-    fn into_diag(&self, emitter: E) -> Diag<E>;
+    fn into_diag(&self, emitter: E) -> Diag<'static, E>;
 }
 
 pub struct Diag<'s, E: Emitter> {
@@ -36,10 +36,15 @@ impl<'s, E: Emitter + Copy> Diag<'s, E> {
     pub fn new(emitter: E, diag_msgs: DiagMessages<'s>) -> Self {
         Self { emitter, diag_msgs }
     }
-    pub fn emit_err(&self, err: impl IntoDiag<E>) {
-        err.into_diag(self.emitter).emit();
-    }
     pub fn emit(&self) {
         self.emitter.emit_diag(&self.diag_msgs);
+    }
+
+    pub fn struct_err(&self, err: impl IntoDiag<E>) -> Diag<'s, E> {
+        err.into_diag(self.emitter)
+    }
+
+    pub fn emit_err(&self, err: impl IntoDiag<E>) {
+        self.struct_err(err).emit();
     }
 }
