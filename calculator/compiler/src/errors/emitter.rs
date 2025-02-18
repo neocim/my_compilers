@@ -11,6 +11,7 @@ impl StdoutEmitter {
     pub fn new() -> Self {
         StdoutEmitter
     }
+
     pub fn emit(&self, diag_msgs: &DiagMessages) {
         for dm in diag_msgs.messages.iter() {
             println!("Error: {}", dm.msg);

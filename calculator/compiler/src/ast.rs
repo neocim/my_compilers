@@ -4,6 +4,10 @@ use token::{BinOpKind, LiteralKind, Token};
 
 pub mod token;
 
+pub enum Ast {
+    Stmt(Stmt),
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Stmt {
     Expr(Expr),
