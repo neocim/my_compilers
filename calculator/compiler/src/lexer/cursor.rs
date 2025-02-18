@@ -108,9 +108,7 @@ impl<'a> Cursor<'a> {
     }
 
     fn eat_next(&mut self) -> Option<char> {
-        let ch = self.input.next()?;
-
-        Some(ch)
+        self.input.next()
     }
 
     fn first(&self) -> char {
