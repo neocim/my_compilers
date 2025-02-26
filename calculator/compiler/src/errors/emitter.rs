@@ -1,7 +1,9 @@
-use crate::errors::diagnostic::DiagMessages;
+use super::diagnostic::DiagnosticMsgs;
+
+pub type DynEmitter = dyn Emitter;
 
 pub trait Emitter {
-    fn emit_diag(&self, diag_msgs: &DiagMessages);
+    fn emit_diag(&self, diag_msgs: &DiagnosticMsgs);
 }
 
 #[derive(Clone, Copy)]
@@ -12,7 +14,7 @@ impl StdoutEmitter {
         StdoutEmitter
     }
 
-    pub fn emit(&self, diag_msgs: &DiagMessages) {
+    pub fn emit(&self, diag_msgs: &DiagnosticMsgs) {
         for dm in diag_msgs.get_msgs().iter() {
             println!("Error: {}", dm.get_msg());
         }
@@ -20,7 +22,7 @@ impl StdoutEmitter {
 }
 
 impl Emitter for StdoutEmitter {
-    fn emit_diag(&self, diag_msgs: &DiagMessages) {
+    fn emit_diag(&self, diag_msgs: &DiagnosticMsgs) {
         self.emit(diag_msgs);
     }
 }
