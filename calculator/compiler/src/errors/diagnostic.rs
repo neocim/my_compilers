@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, fmt::Debug};
 
 use super::emitter::DynEmitter;
 
@@ -8,6 +8,7 @@ pub trait IntoDiagnostic<'a> {
 
 /// The main struct for diagnostics. Its used to store errors in `DiagnosticMsgs`
 /// and various diagnostic parameters stored in `DiagnosticCtxt`.
+#[derive(Debug)]
 pub struct Diagnostic<'a> {
     diag_ctxt: &'a DiagnosticCtxt,
     diag_msgs: DiagnosticMsgs<'a>,
@@ -15,6 +16,7 @@ pub struct Diagnostic<'a> {
 
 /// The struct to store diagnostic parameters such as emitter, etc.
 /// (in the future it may be easy to add new parameters if need)
+#[derive(Debug)]
 pub struct DiagnosticCtxt {
     emitter: Box<DynEmitter>,
 }
@@ -30,7 +32,7 @@ pub struct DiagnosticMsgs<'s> {
     msgs: Vec<DiagnosticMsg<'s>>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct DiagnosticMsg<'s> {
     msg: Cow<'s, str>,
 }

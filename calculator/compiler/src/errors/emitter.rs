@@ -2,11 +2,11 @@ use super::diagnostic::DiagnosticMsgs;
 
 pub type DynEmitter = dyn Emitter;
 
-pub trait Emitter {
+pub trait Emitter: std::fmt::Debug {
     fn emit_diag(&self, diag_msgs: &DiagnosticMsgs);
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct StdoutEmitter;
 
 impl StdoutEmitter {

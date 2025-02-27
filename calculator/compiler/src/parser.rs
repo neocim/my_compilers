@@ -1,9 +1,18 @@
-use crate::{
-    ast::{token::Token, Ast, Expr, TokenStream},
-    errors::{diagnostic::Diag, emitter::Emitter},
-};
-
 mod errors;
+#[cfg(test)]
+mod tests;
+
+use crate::{
+    ast::{
+        token::{BinOpKind, Token},
+        Ast, BinOp, Expr, Stmt, TokenStream,
+    },
+    errors::{
+        diagnostic::{DiagnosticCtxt, DiagnosticHandler},
+        ParseResult,
+    },
+};
+use errors::{ExpectedCloseParen, ExpectedExpr};
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct TokenCursor {
@@ -20,48 +29,77 @@ impl TokenCursor {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct Parser<'s, E: Emitter> {
+pub struct Parser<'a> {
     token_cursor: TokenCursor,
+    diag_ctxt: &'a DiagnosticCtxt,
     cur_tok: Token,
-    diag: Diag<'s, E>,
 }
 
-impl<'s, E: Emitter> Parser<'s, E> {
-    pub fn parse(&mut self) -> Result<Ast, Diag<'s, E>> {
-        loop {
-            let stmt = self.parse_stmt();
-
-            if self.cur_tok == Token::Eof {
-                break;
-            }
+impl<'a> Parser<'a> {
+    pub fn new(token_cursor: TokenCursor, diag_ctxt: &'a DiagnosticCtxt) -> Self {
+        Self {
+            token_cursor,
+            diag_ctxt,
+            cur_tok: Token::ZeroToken,
         }
-        unimplemented!()
     }
 
-    fn parse_stmt(&self) -> Result<Expr, Diag<'s, E>> {
-        let expr = self.parse_expr();
+    pub fn parse(&mut self) -> ParseResult<'a, Ast> {
+        let stmt = self.parse_stmt()?;
 
-        unimplemented!()
+        Ok(Ast::Stmt(stmt))
     }
 
-    fn parse_expr(&self) -> Result<Expr, Diag<'s, E>> {
-        unimplemented!()
+    pub fn parse_stmt(&mut self) -> ParseResult<'a, Stmt> {
+        let expr = self.parse_expr()?;
+
+        Ok(Stmt::Expr(expr))
     }
 
-    fn parse_term(&self) -> Result<Expr, Diag<'s, E>> {
-        unimplemented!()
+    pub fn parse_expr(&mut self) -> ParseResult<'a, Expr> {
+        let lterm = self.parse_term()?;
+
+        match self.cur_tok.clone() {
+            Token::BinOp(kind) if BinOpKind::Sub == kind || BinOpKind::Add == kind => {
+                let rexpr = self.parse_expr()?;
+
+                Ok(Expr::BinOp(BinOp::new(lterm, kind, rexpr)))
+            }
+            _ => Ok(lterm),
+        }
     }
 
-    fn parse_factor(&mut self) -> Result<Expr, Diag<'s, E>> {
-        let token = self.advance();
+    fn parse_term(&mut self) -> ParseResult<'a, Expr> {
+        let lfactor = self.parse_factor()?;
 
-        let expr = match token {
-            Token::Lit { kind } => Expr::Lit { kind },
-            _ => unimplemented!(),
-        };
+        match self.advance() {
+            Token::BinOp(kind) if BinOpKind::Div == kind || BinOpKind::Mul == kind => {
+                let rexpr = self.parse_expr()?;
 
-        Ok(expr)
+                Ok(Expr::BinOp(BinOp::new(lfactor, kind, rexpr)))
+            }
+            _ => Ok(lfactor),
+        }
+    }
+
+    fn parse_factor(&mut self) -> ParseResult<'a, Expr> {
+        match self.advance() {
+            Token::Lit { kind } => Ok(Expr::Lit { kind }),
+            Token::OpenParen => {
+                let expr = self.parse_expr()?;
+
+                if !self.expect(Token::CloseParen) {
+                    Err(self
+                        .handle()
+                        .struct_err(ExpectedCloseParen::new(format!("{:?}", self.cur_tok))))
+                } else {
+                    Ok(expr)
+                }
+            }
+            _ => Err(self
+                .handle()
+                .struct_err(ExpectedExpr::new(format!("{:?}", self.cur_tok)))),
+        }
     }
 
     fn advance(&mut self) -> Token {
@@ -73,5 +111,9 @@ impl<'s, E: Emitter> Parser<'s, E> {
 
     fn expect(&mut self, expected_tok: Token) -> bool {
         self.cur_tok == expected_tok
+    }
+
+    fn handle(&self) -> DiagnosticHandler<'a> {
+        self.diag_ctxt.handle()
     }
 }
