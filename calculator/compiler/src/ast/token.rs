@@ -5,7 +5,9 @@ pub enum Token {
     OpenParen,
     CloseParen,
     Eof,
-    Unknown,
+    Unknown { content: String },
+    // init token (for example, for Parser::new())
+    ZeroToken,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]

@@ -10,7 +10,7 @@ pub enum Token {
     CloseParen,
     Whitespace,
     Eof,
-    Unknown,
+    Unknown { content: String },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]

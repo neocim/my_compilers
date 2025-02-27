@@ -1,4 +1,5 @@
 mod cursor;
+#[cfg(test)]
 mod tests;
 pub mod token;
 
@@ -34,7 +35,7 @@ impl From<Token> for AstToken {
                 Token::CloseParen => AstToken::CloseParen,
                 Token::Whitespace => continue,
                 Token::Eof => AstToken::Eof,
-                Token::Unknown => AstToken::Unknown,
+                Token::Unknown { content } => AstToken::Unknown { content },
             };
         }
     }
@@ -68,7 +69,7 @@ impl<'a> Lexer<'a> {
                 // Skip all whitespaces
                 Token::Whitespace => continue,
                 Token::Eof => AstToken::from(Token::Eof),
-                Token::Unknown => AstToken::from(Token::Unknown),
+                Token::Unknown { content } => AstToken::from(Token::Unknown { content }),
             };
 
             break token;

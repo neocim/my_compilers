@@ -1,9 +1,10 @@
+pub mod token;
+
 use std::collections::VecDeque;
 
 use token::{BinOpKind, LiteralKind, Token};
 
-pub mod token;
-
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Ast {
     Stmt(Stmt),
 }
@@ -28,6 +29,16 @@ pub struct BinOp {
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct TokenStream(pub VecDeque<Token>);
+
+impl BinOp {
+    pub fn new(left: Expr, kind: BinOpKind, right: Expr) -> Self {
+        Self {
+            left: Box::new(left),
+            kind,
+            right: Box::new(right),
+        }
+    }
+}
 
 impl TokenStream {
     pub fn new(stream: VecDeque<Token>) -> Self {

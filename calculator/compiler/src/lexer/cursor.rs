@@ -35,7 +35,7 @@ impl<'a> Cursor<'a> {
             ')' => Token::CloseParen,
             EOF_CHAR => Token::Eof,
             ch if is_whitespace(ch) => self.whitespace(),
-            _ => Token::Unknown,
+            _ => self.unknown(ch),
         };
 
         token
@@ -80,6 +80,20 @@ impl<'a> Cursor<'a> {
         str_number
     }
 
+    fn unknown(&mut self, first_ch: char) -> Token {
+        let mut content = String::from(first_ch);
+
+        while !is_whitespace(self.first()) {
+            let ch = match self.eat_next() {
+                Some(ch) => ch,
+                None => return Token::Unknown { content },
+            };
+            content.push(ch);
+        }
+
+        Token::Unknown { content }
+    }
+
     fn whitespace(&mut self) -> Token {
         self.eat_while(is_whitespace);
 
@@ -90,17 +104,6 @@ impl<'a> Cursor<'a> {
         while condition(self.first()) && !self.is_eof() {
             self.eat_next();
         }
-    }
-
-    pub fn tokenize(&mut self) -> impl Iterator<Item = Token> + use<'a, '_> {
-        std::iter::from_fn(|| {
-            let token = self.next_token();
-            if token != Token::Eof {
-                Some(token)
-            } else {
-                None
-            }
-        })
     }
 
     pub fn is_eof(&self) -> bool {

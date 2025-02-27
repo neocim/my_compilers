@@ -1,5 +1,3 @@
-#![cfg(test)]
-
 use std::collections::VecDeque;
 
 use crate::{
@@ -15,11 +13,22 @@ use crate::{
     },
 };
 
+pub fn tokenize(mut cursor: Cursor) -> impl Iterator<Item = Token> + use<'_> {
+    std::iter::from_fn(move || {
+        let token = cursor.next_token();
+        if token != Token::Eof {
+            Some(token)
+        } else {
+            None
+        }
+    })
+}
+
 #[test]
 fn cursor_test() {
-    let input = "123.4 * 5 + (6789.12345 - 600)";
-    let mut lexer = Cursor::new(input);
-    let token_stream: Vec<_> = lexer.tokenize().collect();
+    let input = "123.4 * 5 + (6789.12345 - 600) #$ ~```~~~";
+    let cursor = Cursor::new(input);
+    let token_stream: Vec<_> = tokenize(cursor).collect();
     let token_stream = DebugHelper::new(&token_stream);
 
     assert_eq!(
@@ -59,6 +68,15 @@ fn cursor_test() {
                     },
                 },
                 Token::CloseParen,
+                Token::Whitespace,
+                // `#$ ~```~~~`
+                Token::Unknown {
+                    content: "#$".to_string()
+                },
+                Token::Whitespace,
+                Token::Unknown {
+                    content: "~```~~~".to_string()
+                },
             ]
             .as_ref()
         )
@@ -67,7 +85,7 @@ fn cursor_test() {
 
 #[test]
 fn lexer_token_stream_test() {
-    let mut lexer = Lexer::new("123    + 54321 - (        1.123456789 ) * 3 / 1 % 10");
+    let mut lexer = Lexer::new("123    + 54321 - (        1.123456789 ) * 3 / 1 % 10   #$^     @");
     let result = lexer.token_stream();
 
     assert_eq!(
@@ -113,6 +131,14 @@ fn lexer_token_stream_test() {
                     val: "10".to_string(),
                 },
             },
+            // `#$^`
+            AstToken::Unknown {
+                content: "#$^".to_string()
+            },
+            // `@`
+            AstToken::Unknown {
+                content: "@".to_string()
+            }
         ]))
     );
 }
