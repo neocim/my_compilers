@@ -2,6 +2,8 @@ mod errors;
 #[cfg(test)]
 mod tests;
 
+use std::collections::VecDeque;
+
 use crate::{
     ast::{
         token::{BinOpKind, Token},
@@ -24,7 +26,7 @@ impl TokenCursor {
         Self { token_stream }
     }
 
-    pub fn advance(&mut self) -> Token {
+    fn advance(&mut self) -> Token {
         self.token_stream.next().unwrap_or(Token::Eof)
     }
 }
@@ -50,13 +52,13 @@ impl<'a> Parser<'a> {
         Ok(Ast::Stmt(stmt))
     }
 
-    pub fn parse_stmt(&mut self) -> ParseResult<'a, Stmt> {
+    fn parse_stmt(&mut self) -> ParseResult<'a, Stmt> {
         let expr = self.parse_expr()?;
 
         Ok(Stmt::Expr(expr))
     }
 
-    pub fn parse_expr(&mut self) -> ParseResult<'a, Expr> {
+    fn parse_expr(&mut self) -> ParseResult<'a, Expr> {
         let lterm = self.parse_term()?;
 
         match self.cur_tok.clone() {

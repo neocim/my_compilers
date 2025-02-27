@@ -90,7 +90,7 @@ impl<'a> Lexer<'a> {
     }
 }
 
-pub fn is_whitespace(c: char) -> bool {
+fn is_whitespace(c: char) -> bool {
     matches!(
         c,
         // Usual ASCII suspects

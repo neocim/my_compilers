@@ -28,7 +28,7 @@ pub struct BinOp {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct TokenStream(pub VecDeque<Token>);
+pub struct TokenStream(VecDeque<Token>);
 
 impl BinOp {
     pub fn new(left: Expr, kind: BinOpKind, right: Expr) -> Self {

@@ -1,7 +1,6 @@
 use crate::errors::diagnostic::{
     Diagnostic, DiagnosticCtxt, DiagnosticMsg, DiagnosticMsgs, IntoDiagnostic,
 };
-
 use calculator_macros::IntoDiagnostic;
 
 #[derive(IntoDiagnostic)]

@@ -106,7 +106,7 @@ impl<'a> Cursor<'a> {
         }
     }
 
-    pub fn is_eof(&self) -> bool {
+    fn is_eof(&self) -> bool {
         self.input.as_str().is_empty()
     }
 

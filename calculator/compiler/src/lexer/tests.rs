@@ -13,7 +13,7 @@ use crate::{
     },
 };
 
-pub fn tokenize(mut cursor: Cursor) -> impl Iterator<Item = Token> + use<'_> {
+fn tokenize(mut cursor: Cursor) -> impl Iterator<Item = Token> + use<'_> {
     std::iter::from_fn(move || {
         let token = cursor.next_token();
         if token != Token::Eof {
@@ -89,8 +89,8 @@ fn lexer_token_stream_test() {
     let result = lexer.token_stream();
 
     assert_eq!(
-        DebugHelper::new(&result.0),
-        DebugHelper::new(&VecDeque::from([
+        DebugHelper::new(&result),
+        DebugHelper::new(&TokenStream::new(VecDeque::from([
             // `123 + 54321 -`
             AstToken::Lit {
                 kind: AstLiteralKind::Int {
@@ -139,21 +139,6 @@ fn lexer_token_stream_test() {
             AstToken::Unknown {
                 content: "@".to_string()
             }
-        ]))
+        ])))
     );
-}
-
-#[test]
-fn test_token_stream_next() {
-    let mut stream = TokenStream::new(VecDeque::from([
-        AstToken::BinOp(BinOpKind::Add),
-        AstToken::BinOp(BinOpKind::Sub),
-        AstToken::BinOp(BinOpKind::Div),
-    ]));
-
-    assert_eq!(stream.next(), Some(AstToken::BinOp(BinOpKind::Add)));
-    assert_eq!(stream.next(), Some(AstToken::BinOp(BinOpKind::Sub)));
-    assert_eq!(stream.next(), Some(AstToken::BinOp(BinOpKind::Div)));
-    // make sure that we are not advancing in the cloned field
-    assert_eq!(stream.0.into_iter().next(), None);
 }
