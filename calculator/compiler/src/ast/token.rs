@@ -1,4 +1,4 @@
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub enum Token {
     Lit { kind: LiteralKind },
     BinOp(BinOpKind),
@@ -10,7 +10,7 @@ pub enum Token {
     ZeroToken,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub enum LiteralKind {
     Int { val: String },
     Float { val: String },

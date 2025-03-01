@@ -2,12 +2,10 @@ mod errors;
 #[cfg(test)]
 mod tests;
 
-use std::collections::VecDeque;
-
 use crate::{
     ast::{
         token::{BinOpKind, Token},
-        Ast, BinOp, Expr, Stmt, TokenStream,
+        Ast, BinOp, Expr, Lit, Stmt, TokenStream,
     },
     errors::{
         diagnostic::{DiagnosticCtxt, DiagnosticHandler},
@@ -16,7 +14,7 @@ use crate::{
 };
 use errors::{ExpectedCloseParen, ExpectedExpr};
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub struct TokenCursor {
     token_stream: TokenStream,
 }
@@ -86,7 +84,7 @@ impl<'a> Parser<'a> {
 
     fn parse_factor(&mut self) -> ParseResult<'a, Expr> {
         match self.advance() {
-            Token::Lit { kind } => Ok(Expr::Lit { kind }),
+            Token::Lit { kind } => Ok(Expr::Lit(Lit::new(kind))),
             Token::OpenParen => {
                 let expr = self.parse_expr()?;
 

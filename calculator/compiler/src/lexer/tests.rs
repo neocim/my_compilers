@@ -29,57 +29,54 @@ fn cursor_test() {
     let input = "123.4 * 5 + (6789.12345 - 600) #$ ~```~~~";
     let cursor = Cursor::new(input);
     let token_stream: Vec<_> = tokenize(cursor).collect();
-    let token_stream = DebugHelper::new(&token_stream);
+    let token_stream = token_stream;
 
     assert_eq!(
-        token_stream,
-        DebugHelper::new(
-            vec![
-                // `123.4 * 5 + `
-                Token::Lit {
-                    kind: LiteralKind::Float {
-                        val: "123.4".to_string(),
-                    },
+        DebugHelper::new_iterable(token_stream),
+        DebugHelper::new_iterable(vec![
+            // `123.4 * 5 + `
+            Token::Lit {
+                kind: LiteralKind::Float {
+                    val: "123.4".to_string(),
                 },
-                Token::Whitespace,
-                Token::Star,
-                Token::Whitespace,
-                Token::Lit {
-                    kind: LiteralKind::Int {
-                        val: "5".to_string(),
-                    },
+            },
+            Token::Whitespace,
+            Token::Star,
+            Token::Whitespace,
+            Token::Lit {
+                kind: LiteralKind::Int {
+                    val: "5".to_string(),
                 },
-                Token::Whitespace,
-                Token::Plus,
-                Token::Whitespace,
-                // `(6789.12345 - 600)`
-                Token::OpenParen,
-                Token::Lit {
-                    kind: LiteralKind::Float {
-                        val: "6789.12345".to_string(),
-                    },
+            },
+            Token::Whitespace,
+            Token::Plus,
+            Token::Whitespace,
+            // `(6789.12345 - 600)`
+            Token::OpenParen,
+            Token::Lit {
+                kind: LiteralKind::Float {
+                    val: "6789.12345".to_string(),
                 },
-                Token::Whitespace,
-                Token::Minus,
-                Token::Whitespace,
-                Token::Lit {
-                    kind: LiteralKind::Int {
-                        val: "600".to_string(),
-                    },
+            },
+            Token::Whitespace,
+            Token::Minus,
+            Token::Whitespace,
+            Token::Lit {
+                kind: LiteralKind::Int {
+                    val: "600".to_string(),
                 },
-                Token::CloseParen,
-                Token::Whitespace,
-                // `#$ ~```~~~`
-                Token::Unknown {
-                    content: "#$".to_string()
-                },
-                Token::Whitespace,
-                Token::Unknown {
-                    content: "~```~~~".to_string()
-                },
-            ]
-            .as_ref()
-        )
+            },
+            Token::CloseParen,
+            Token::Whitespace,
+            // `#$ ~```~~~`
+            Token::Unknown {
+                content: "#$".to_string()
+            },
+            Token::Whitespace,
+            Token::Unknown {
+                content: "~```~~~".to_string()
+            },
+        ])
     )
 }
 
@@ -89,8 +86,8 @@ fn lexer_token_stream_test() {
     let result = lexer.token_stream();
 
     assert_eq!(
-        DebugHelper::new(&result),
-        DebugHelper::new(&TokenStream::new(VecDeque::from([
+        DebugHelper::new_iterable(result),
+        DebugHelper::new_iterable(TokenStream::new(VecDeque::from([
             // `123 + 54321 -`
             AstToken::Lit {
                 kind: AstLiteralKind::Int {

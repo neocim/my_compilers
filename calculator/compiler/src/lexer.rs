@@ -5,41 +5,11 @@ pub mod token;
 
 use std::collections::VecDeque;
 
-use crate::ast::{
-    token::{BinOpKind, LiteralKind as AstLiteralKind, Token as AstToken},
-    TokenStream,
-};
+use crate::ast::{token as ast, TokenStream};
 use crate::lexer::cursor::Cursor;
 use token::{LiteralKind, Token};
 
 pub const EOF_CHAR: char = '\0';
-
-impl From<Token> for AstToken {
-    fn from(value: Token) -> Self {
-        loop {
-            return match value {
-                Token::Lit { kind } => match kind {
-                    LiteralKind::Int { val } => AstToken::Lit {
-                        kind: AstLiteralKind::Int { val },
-                    },
-                    LiteralKind::Float { val } => AstToken::Lit {
-                        kind: AstLiteralKind::Float { val },
-                    },
-                },
-                Token::Star => AstToken::BinOp(BinOpKind::Mul),
-                Token::Slash => AstToken::BinOp(BinOpKind::Div),
-                Token::Percent => AstToken::BinOp(BinOpKind::Mod),
-                Token::Plus => AstToken::BinOp(BinOpKind::Add),
-                Token::Minus => AstToken::BinOp(BinOpKind::Sub),
-                Token::OpenParen => AstToken::OpenParen,
-                Token::CloseParen => AstToken::CloseParen,
-                Token::Whitespace => continue,
-                Token::Eof => AstToken::Eof,
-                Token::Unknown { content } => AstToken::Unknown { content },
-            };
-        }
-    }
-}
 
 #[derive(Clone, Debug)]
 pub struct Lexer<'a> {
@@ -53,23 +23,30 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn next_token(&mut self) -> AstToken {
+    fn next_token(&mut self) -> ast::Token {
         loop {
             let token = self.cursor.next_token();
 
             let token = match token {
-                Token::Lit { kind } => AstToken::from(Token::Lit { kind }),
-                Token::Star => AstToken::from(Token::Star),
-                Token::Slash => AstToken::from(Token::Slash),
-                Token::Percent => AstToken::from(Token::Percent),
-                Token::Plus => AstToken::from(Token::Plus),
-                Token::Minus => AstToken::from(Token::Minus),
-                Token::OpenParen => AstToken::from(Token::OpenParen),
-                Token::CloseParen => AstToken::from(Token::CloseParen),
+                Token::Lit { kind } => match kind {
+                    LiteralKind::Int { val } => ast::Token::Lit {
+                        kind: ast::LiteralKind::Int { val },
+                    },
+                    LiteralKind::Float { val } => ast::Token::Lit {
+                        kind: ast::LiteralKind::Float { val },
+                    },
+                },
+                Token::Star => ast::Token::BinOp(ast::BinOpKind::Mul),
+                Token::Slash => ast::Token::BinOp(ast::BinOpKind::Div),
+                Token::Percent => ast::Token::BinOp(ast::BinOpKind::Mod),
+                Token::Plus => ast::Token::BinOp(ast::BinOpKind::Add),
+                Token::Minus => ast::Token::BinOp(ast::BinOpKind::Sub),
+                Token::OpenParen => ast::Token::OpenParen,
+                Token::CloseParen => ast::Token::CloseParen,
                 // Skip all whitespaces
                 Token::Whitespace => continue,
-                Token::Eof => AstToken::from(Token::Eof),
-                Token::Unknown { content } => AstToken::from(Token::Unknown { content }),
+                Token::Eof => ast::Token::Eof,
+                Token::Unknown { content } => ast::Token::Unknown { content },
             };
 
             break token;
@@ -81,7 +58,7 @@ impl<'a> Lexer<'a> {
 
         loop {
             match self.next_token() {
-                AstToken::Eof => return TokenStream::new(VecDeque::from(buf)),
+                ast::Token::Eof => return TokenStream::new(VecDeque::from(buf)),
                 token => {
                     buf.push(token);
                 }

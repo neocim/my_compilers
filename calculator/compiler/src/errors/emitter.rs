@@ -6,7 +6,7 @@ pub trait Emitter: std::fmt::Debug {
     fn emit_diag(&self, diag_msgs: &DiagnosticMsgs);
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct StdoutEmitter;
 
 impl StdoutEmitter {

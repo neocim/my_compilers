@@ -4,30 +4,35 @@ use std::collections::VecDeque;
 
 use token::{BinOpKind, LiteralKind, Token};
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub enum Ast {
     Stmt(Stmt),
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub enum Stmt {
     Expr(Expr),
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub enum Expr {
-    Lit { kind: LiteralKind },
+    Lit(Lit),
     BinOp(BinOp),
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub struct BinOp {
     left: Box<Expr>,
     kind: BinOpKind,
     right: Box<Expr>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, PartialOrd)]
+pub struct Lit {
+    kind: LiteralKind,
+}
+
+#[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub struct TokenStream(VecDeque<Token>);
 
 impl BinOp {
@@ -37,6 +42,12 @@ impl BinOp {
             kind,
             right: Box::new(right),
         }
+    }
+}
+
+impl Lit {
+    pub fn new(kind: LiteralKind) -> Self {
+        Self { kind }
     }
 }
 
