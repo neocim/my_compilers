@@ -4,7 +4,7 @@
 
 <h2>What is it?</h2>
 
-This is a simple interpreter that calculate binary ex pressions and displays the result.
+This is a simple interpreter that calculate binary expressions and displays the result.
 
 <h2>TODO!</h2>
 
