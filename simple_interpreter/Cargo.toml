@@ -1,0 +1,7 @@
+[package]
+name = "simple_interpreter"
+description = "An simple interpreter that calculates the result from a prepared parse tree"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
