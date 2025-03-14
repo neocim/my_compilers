@@ -49,20 +49,6 @@ impl Lit {
     pub fn new(kind: LiteralKind) -> Self {
         Self { kind }
     }
-
-    pub fn get_int<'a>(&'a self) -> Option<&'a str> {
-        match &self.kind {
-            LiteralKind::Int { val } => Some(val),
-            _ => None,
-        }
-    }
-
-    pub fn get_float<'a>(&'a self) -> Option<&'a str> {
-        match &self.kind {
-            LiteralKind::Float { val } => Some(val),
-            _ => None,
-        }
-    }
 }
 
 impl TokenStream {

@@ -18,8 +18,8 @@ use crate::{
 struct MockEmitter;
 
 impl Emitter for MockEmitter {
-    fn emit_diag(&self, _diag_msgs: &DiagnosticMsgs) {
-        panic!()
+    fn emit_diag(&self, diag_msgs: &DiagnosticMsgs) {
+        panic!("{:?}", diag_msgs)
     }
 }
 

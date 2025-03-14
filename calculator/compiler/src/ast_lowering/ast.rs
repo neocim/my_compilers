@@ -40,3 +40,19 @@ pub enum LiteralKind {
     Int { val: i32 },
     Float { val: f32 },
 }
+
+impl Lit {
+    pub fn get_int(&self) -> Option<i32> {
+        match self.kind {
+            LiteralKind::Int { val } => Some(val),
+            _ => None,
+        }
+    }
+
+    pub fn get_float(&self) -> Option<f32> {
+        match self.kind {
+            LiteralKind::Float { val } => Some(val),
+            _ => None,
+        }
+    }
+}

@@ -6,8 +6,8 @@ use calculator_macros::IntoDiagnostic;
 #[derive(IntoDiagnostic)]
 #[diagnostic("mismatched types: `{}` and `{}`")]
 pub struct MismatchedTypes {
-    lty: String,
     rty: String,
+    lty: String,
 }
 
 impl MismatchedTypes {

@@ -6,11 +6,11 @@ use ast::{Ast, BinOp, BinOpKind, Expr, Lit, LiteralKind, Stmt};
 pub mod ast;
 pub mod errors;
 
-pub struct Lowering<'a> {
+pub struct Lower<'a> {
     diag_ctxt: &'a DiagnosticCtxt,
 }
 
-impl<'a> Lowering<'a> {
+impl<'a> Lower<'a> {
     pub fn new(diag_ctxt: &'a DiagnosticCtxt) -> Self {
         Self { diag_ctxt }
     }
