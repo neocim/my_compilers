@@ -22,14 +22,14 @@ pub enum Expr {
 
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub struct BinOp {
-    left: Box<Expr>,
-    kind: BinOpKind,
-    right: Box<Expr>,
+    pub left: Box<Expr>,
+    pub kind: BinOpKind,
+    pub right: Box<Expr>,
 }
 
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub struct Lit {
-    kind: LiteralKind,
+    pub kind: LiteralKind,
 }
 
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
@@ -48,6 +48,20 @@ impl BinOp {
 impl Lit {
     pub fn new(kind: LiteralKind) -> Self {
         Self { kind }
+    }
+
+    pub fn get_int<'a>(&'a self) -> Option<&'a str> {
+        match &self.kind {
+            LiteralKind::Int { val } => Some(val),
+            _ => None,
+        }
+    }
+
+    pub fn get_float<'a>(&'a self) -> Option<&'a str> {
+        match &self.kind {
+            LiteralKind::Float { val } => Some(val),
+            _ => None,
+        }
     }
 }
 

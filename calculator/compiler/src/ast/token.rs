@@ -16,7 +16,7 @@ pub enum LiteralKind {
     Float { val: String },
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum BinOpKind {
     Add,
     Sub,
