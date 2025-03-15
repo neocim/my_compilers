@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use super::{Parser, TokenCursor};
+use super::Parser;
 use crate::{
     ast::{
         token::{BinOpKind, LiteralKind},
@@ -11,7 +11,6 @@ use crate::{
         emitter::Emitter,
     },
     helpers::test::DebugHelper,
-    lexer::Lexer,
 };
 
 #[derive(Debug)]
@@ -25,9 +24,8 @@ impl Emitter for MockEmitter {
 
 #[test]
 fn test_binop_parsing() {
-    let mut lexer = Lexer::new("1.2345 * (2 + 3)");
     let diag_ctxt = DiagnosticCtxt::new(Box::new(MockEmitter));
-    let mut parser = Parser::new(TokenCursor::new(lexer.token_stream()), &diag_ctxt);
+    let mut parser = Parser::from_source("1.2345 * (2 + 3)", &diag_ctxt);
 
     assert_eq!(
         DebugHelper::new_not_iterable(parser.parse().unwrap()),

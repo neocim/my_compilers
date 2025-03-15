@@ -19,14 +19,12 @@ impl Emitter for MockEmitter {
 #[test]
 fn test_calculate() {
     let diag_ctxt = DiagnosticCtxt::new(Box::new(MockEmitter));
-    let lower = Lower::new(&diag_ctxt);
+    let res = Calculator::from_source("2 + 2 * 2", &diag_ctxt)
+        .unwrap()
+        .compile()
+        .unwrap()
+        .get_int()
+        .unwrap();
 
-    let mut lexer = Lexer::new("2.1 + 2.0 + 2.3");
-    let mut parser = Parser::new(TokenCursor::new(lexer.token_stream()), &diag_ctxt);
-
-    let ast = parser.parse().unwrap();
-    let calculator = Calculator::new(lower.lower(ast).unwrap(), &diag_ctxt);
-
-    let res = calculator.compile().unwrap().get_float().unwrap();
-    assert_eq!(res, 6.4);
+    assert_eq!(res, 6);
 }
