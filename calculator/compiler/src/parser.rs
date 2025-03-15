@@ -42,7 +42,7 @@ impl<'a> Parser<'a> {
         Self {
             token_cursor,
             diag_ctxt,
-            cur_tok: Token::ZeroToken,
+            cur_tok: Token::EmptyExpr,
         }
     }
 
@@ -78,6 +78,7 @@ impl<'a> Parser<'a> {
 
                 Ok(Expr::BinOp(BinOp::new(lterm, kind, rexpr)))
             }
+            Token::Eof => Ok(lterm),
             _ => Ok(lterm),
         }
     }
@@ -91,6 +92,7 @@ impl<'a> Parser<'a> {
 
                 Ok(Expr::BinOp(BinOp::new(lfactor, kind, rexpr)))
             }
+            Token::Eof => Ok(lfactor),
             _ => Ok(lfactor),
         }
     }
@@ -117,7 +119,10 @@ impl<'a> Parser<'a> {
 
     fn advance(&mut self) -> Token {
         let token = self.token_cursor.advance();
-        self.cur_tok = token.clone();
+
+        if token != Token::Eof {
+            self.cur_tok = token.clone();
+        }
 
         token
     }

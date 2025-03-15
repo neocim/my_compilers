@@ -7,7 +7,7 @@ pub enum Token {
     Eof,
     Unknown { content: String },
     // init token (for example, for Parser::new())
-    ZeroToken,
+    EmptyExpr,
 }
 
 #[derive(Clone, Debug, PartialEq, PartialOrd)]

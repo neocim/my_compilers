@@ -1,9 +1,4 @@
-use crate::{
-    ast_lowering::Lower,
-    errors::{diagnostic::DiagnosticCtxt, emitter::Emitter},
-    lexer::Lexer,
-    parser::{Parser, TokenCursor},
-};
+use crate::errors::{diagnostic::DiagnosticCtxt, emitter::Emitter};
 
 use super::Calculator;
 
