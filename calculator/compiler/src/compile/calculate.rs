@@ -2,12 +2,15 @@ mod errors;
 #[cfg(test)]
 mod tests;
 
-use super::Compile;
+use std::{fs, path::Path};
+
+use super::{Compile, SOURCE_FILE_EXTENSION};
 use crate::{
     ast_lowering::ast::{Ast, BinOp, BinOpKind, Expr, Lit, LiteralKind, Stmt},
     errors::diagnostic::{Diagnostic, DiagnosticCtxt},
+    parser::Parser,
 };
-use errors::MismatchedTypes;
+use errors::{MismatchedTypes, OpenFileError, WrongFileExtension};
 
 type CalcRes<'a> = Result<Lit, Diagnostic<'a>>;
 
@@ -27,6 +30,59 @@ impl<'a> Compile for Calculator<'a> {
 impl<'a> Calculator<'a> {
     pub fn new(root: Ast, diag_ctxt: &'a DiagnosticCtxt) -> Self {
         Self { root, diag_ctxt }
+    }
+
+    pub fn from_source_file(
+        path: &str,
+        diag_ctxt: &'a DiagnosticCtxt,
+    ) -> Result<Self, Diagnostic<'a>> {
+        let diag_handle = diag_ctxt.handle();
+        let file_path = Path::new(path);
+
+        let file_name = match file_path.file_name() {
+            Some(name) => name.to_string_lossy(),
+            None => {
+                return Err(diag_handle.struct_err(OpenFileError::new(
+                    path.to_string(),
+                    "wrong file path".to_string(),
+                )))
+            }
+        };
+        let ext = match file_path.extension() {
+            Some(ext) => ext.to_string_lossy(),
+            None => {
+                return Err(diag_handle.struct_err(WrongFileExtension::new(
+                    None,
+                    file_name.into(),
+                    SOURCE_FILE_EXTENSION.to_string(),
+                )))
+            }
+        };
+
+        if ext == SOURCE_FILE_EXTENSION {
+            let source = match fs::read_to_string(path) {
+                Ok(source) => source,
+                Err(err) => {
+                    return Err(diag_handle
+                        .struct_err(OpenFileError::new(path.to_string(), err.to_string())))
+                }
+            };
+
+            Calculator::from_source(source.as_str(), diag_ctxt)
+        } else {
+            Err(diag_handle.struct_err(WrongFileExtension::new(
+                Some(ext.into()),
+                file_name.into(),
+                SOURCE_FILE_EXTENSION.to_string(),
+            )))
+        }
+    }
+
+    pub fn from_source(src: &str, diag_ctxt: &'a DiagnosticCtxt) -> Result<Self, Diagnostic<'a>> {
+        Ok(Calculator::new(
+            Parser::from_source(src, diag_ctxt).lowering_parse()?,
+            diag_ctxt,
+        ))
     }
 
     fn compile(&self) -> CalcRes<'a> {

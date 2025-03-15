@@ -7,10 +7,12 @@ use crate::{
         token::{BinOpKind, Token},
         Ast, BinOp, Expr, Lit, Stmt, TokenStream,
     },
+    ast_lowering::{self, Lower},
     errors::{
-        diagnostic::{DiagnosticCtxt, DiagnosticHandler},
+        diagnostic::{Diagnostic, DiagnosticCtxt, DiagnosticHandler},
         ParseResult,
     },
+    lexer::Lexer,
 };
 use errors::{ExpectedCloseParen, ExpectedExpr};
 
@@ -42,6 +44,17 @@ impl<'a> Parser<'a> {
             diag_ctxt,
             cur_tok: Token::ZeroToken,
         }
+    }
+
+    pub fn from_source(source: &str, diag_ctxt: &'a DiagnosticCtxt) -> Self {
+        Parser::new(
+            TokenCursor::new(Lexer::new(source).token_stream()),
+            diag_ctxt,
+        )
+    }
+
+    pub fn lowering_parse(&mut self) -> Result<ast_lowering::ast::Ast, Diagnostic<'a>> {
+        Lower::new(self.diag_ctxt).lower(self.parse()?)
     }
 
     pub fn parse(&mut self) -> ParseResult<'a, Ast> {
