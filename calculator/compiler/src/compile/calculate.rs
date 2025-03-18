@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 mod errors;
 #[cfg(test)]
 mod tests;
@@ -14,12 +16,13 @@ use errors::{MismatchedTypes, OpenFileError, WrongFileExtension};
 
 type CalcRes<'a> = Result<Lit, Diagnostic<'a>>;
 
-pub struct Calculator<'a> {
+pub struct Program<'a> {
     root: Ast,
+    path: String,
     diag_ctxt: &'a DiagnosticCtxt,
 }
 
-impl<'a> Compile for Calculator<'a> {
+impl<'a> Compile for Program<'a> {
     type Ret = CalcRes<'a>;
 
     fn compile(&self) -> Self::Ret {
@@ -27,31 +30,28 @@ impl<'a> Compile for Calculator<'a> {
     }
 }
 
-impl<'a> Calculator<'a> {
-    pub fn new(root: Ast, diag_ctxt: &'a DiagnosticCtxt) -> Self {
-        Self { root, diag_ctxt }
-    }
-
+impl<'a> Program<'a> {
     pub fn from_source_file(
-        path: &str,
+        path: String,
         diag_ctxt: &'a DiagnosticCtxt,
     ) -> Result<Self, Diagnostic<'a>> {
         let diag_handle = diag_ctxt.handle();
-        let file_path = Path::new(path);
+        let file_path = Path::new(&path);
 
         let file_name = match file_path.file_name() {
             Some(name) => name.to_string_lossy(),
             None => {
-                return Err(diag_handle.struct_err(OpenFileError::new(
+                return Err(diag_handle.emit_err(OpenFileError::new(
                     path.to_string(),
                     "wrong file path".to_string(),
                 )))
             }
         };
+
         let ext = match file_path.extension() {
             Some(ext) => ext.to_string_lossy(),
             None => {
-                return Err(diag_handle.struct_err(WrongFileExtension::new(
+                return Err(diag_handle.emit_err(WrongFileExtension::new(
                     None,
                     file_name.into(),
                     SOURCE_FILE_EXTENSION.to_string(),
@@ -60,17 +60,22 @@ impl<'a> Calculator<'a> {
         };
 
         if ext == SOURCE_FILE_EXTENSION {
-            let source = match fs::read_to_string(path) {
+            let src = match fs::read_to_string(&path) {
                 Ok(source) => source,
                 Err(err) => {
-                    return Err(diag_handle
-                        .struct_err(OpenFileError::new(path.to_string(), err.to_string())))
+                    return Err(
+                        diag_handle.emit_err(OpenFileError::new(path.to_string(), err.to_string()))
+                    )
                 }
             };
 
-            Calculator::from_source(source.as_str(), diag_ctxt)
+            Ok(Program::new(
+                Parser::from_source(src.as_ref(), diag_ctxt).lowering_parse()?,
+                path,
+                diag_ctxt,
+            ))
         } else {
-            Err(diag_handle.struct_err(WrongFileExtension::new(
+            Err(diag_handle.emit_err(WrongFileExtension::new(
                 Some(ext.into()),
                 file_name.into(),
                 SOURCE_FILE_EXTENSION.to_string(),
@@ -78,11 +83,28 @@ impl<'a> Calculator<'a> {
         }
     }
 
-    pub fn from_source(src: &str, diag_ctxt: &'a DiagnosticCtxt) -> Result<Self, Diagnostic<'a>> {
-        Ok(Calculator::new(
+    fn from_source(
+        src: &str,
+        path: String,
+        diag_ctxt: &'a DiagnosticCtxt,
+    ) -> Result<Self, Diagnostic<'a>> {
+        Ok(Program::new(
             Parser::from_source(src, diag_ctxt).lowering_parse()?,
+            path,
             diag_ctxt,
         ))
+    }
+
+    fn new(root: Ast, path: String, diag_ctxt: &'a DiagnosticCtxt) -> Self {
+        Self {
+            root,
+            path,
+            diag_ctxt,
+        }
+    }
+
+    pub fn get_path(&self) -> &str {
+        &self.path
     }
 
     fn compile(&self) -> CalcRes<'a> {
@@ -130,7 +152,7 @@ impl<'a> Calculator<'a> {
                     val: self.apply_binop(lhs, rhs, *op),
                 },
             }),
-            (Lit { kind: lty }, Lit { kind: rty }) => Err(self.diag_ctxt.handle().struct_err(
+            (Lit { kind: lty }, Lit { kind: rty }) => Err(self.diag_ctxt.handle().emit_err(
                 MismatchedTypes::new(format!("{:?}", lty), format!("{:?}", rty)),
             )),
         }

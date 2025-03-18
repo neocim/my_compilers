@@ -1,6 +1,6 @@
 mod calculate;
 
-pub use calculate::Calculator;
+pub use calculate::Program;
 
 pub const SOURCE_FILE_EXTENSION: &'static str = "calc";
 

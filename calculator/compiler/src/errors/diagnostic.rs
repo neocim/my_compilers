@@ -66,8 +66,10 @@ impl<'a> DiagnosticHandler<'a> {
     }
 
     // Creates a `Dianostic` from error and emits it
-    pub fn emit_err(self, err: impl IntoDiagnostic<'a>) {
-        self.struct_err(err).emit();
+    pub fn emit_err(self, err: impl IntoDiagnostic<'a>) -> Diagnostic<'a> {
+        let err = self.struct_err(err);
+        err.emit();
+        err
     }
 
     // Create a `Diagnostic` from error that we can emit/return later

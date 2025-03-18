@@ -1,6 +1,6 @@
 use crate::errors::{diagnostic::DiagnosticCtxt, emitter::Emitter};
 
-use super::Calculator;
+use super::Program;
 
 #[derive(Debug)]
 struct MockEmitter;
@@ -14,7 +14,7 @@ impl Emitter for MockEmitter {
 #[test]
 fn test_calculate() {
     let diag_ctxt = DiagnosticCtxt::new(Box::new(MockEmitter));
-    let res = Calculator::from_source("2 + 2 * 2", &diag_ctxt)
+    let res = Program::from_source("2 + 2 * 2", "".to_string(), &diag_ctxt)
         .unwrap()
         .compile()
         .unwrap()

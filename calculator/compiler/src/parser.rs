@@ -106,14 +106,14 @@ impl<'a> Parser<'a> {
                 if !self.expect(Token::CloseParen) {
                     Err(self
                         .handle()
-                        .struct_err(ExpectedCloseParen::new(format!("{:?}", self.cur_tok))))
+                        .emit_err(ExpectedCloseParen::new(format!("{:?}", self.cur_tok))))
                 } else {
                     Ok(expr)
                 }
             }
             _ => Err(self
                 .handle()
-                .struct_err(ExpectedExpr::new(format!("{:?}", self.cur_tok)))),
+                .emit_err(ExpectedExpr::new(format!("{:?}", self.cur_tok)))),
         }
     }
 
