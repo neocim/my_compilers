@@ -1,12 +1,8 @@
-use std::{
-    env,
-    io::{self, ErrorKind},
-    process::exit,
-};
+use std::{env, io, process::exit};
 
 use crate::{
     ast_lowering::ast::LiteralKind,
-    compile::{Compile, Program},
+    compile::{Compile, Program, SOURCE_FILE_EXTENSION},
     errors::diagnostic::{Diagnostic, DiagnosticCtxt},
 };
 
@@ -24,21 +20,24 @@ impl<'a> ProgramSess<'a> {
         let path = std::path::Path::new(path);
 
         match env::set_current_dir(path) {
-            Ok(()) => Ok(Self {
-                cur: std::path::PathBuf::from(path),
-                diag_ctxt,
-                file_path: None,
+            Ok(()) => Ok({
+                Self {
+                    cur: env::current_dir()?,
+                    diag_ctxt,
+                    file_path: None,
+                }
             }),
-            Err(err) if ErrorKind::NotADirectory == err.kind() && path.is_file() => {
+            Err(err) if io::ErrorKind::NotADirectory == err.kind() && path.is_file() => {
                 // if its a file, then we can be sure that it has a parent
                 env::set_current_dir(
                     path.parent()
                         .expect("This is file does not contains a parent directory"),
                 )?;
+
                 Ok(Self {
                     cur: env::current_dir()?,
                     diag_ctxt,
-                    file_path: Some(std::path::PathBuf::from(path)),
+                    file_path: Some(env::current_dir()?.join(path.file_name().unwrap())),
                 })
             }
             Err(err) => Err(err),
@@ -79,7 +78,9 @@ impl<'a> ProgramSess<'a> {
             }
             .path();
 
-            self.exec_with_exit(path.as_path());
+            if self.is_valid_file(path.as_path()) {
+                self.exec_with_exit(path.as_path());
+            }
         }
     }
 
@@ -118,5 +119,13 @@ impl<'a> ProgramSess<'a> {
 
     fn get_cur_dir(&self) -> &std::path::Path {
         self.cur.as_path()
+    }
+
+    fn is_valid_file(&self, path: &std::path::Path) -> bool {
+        if let Some(ext) = path.extension() {
+            ext == SOURCE_FILE_EXTENSION
+        } else {
+            false
+        }
     }
 }

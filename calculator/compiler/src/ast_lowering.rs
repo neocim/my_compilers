@@ -90,7 +90,7 @@ impl<'a> Lower<'a> {
             Err(err) => Err(self
                 .diag_ctxt
                 .handle()
-                .emit_err(errors::ParseIntError::new(maybe_float, err.to_string()))),
+                .emit_err(errors::ParseFloatError::new(maybe_float, err.to_string()))),
         }
     }
 }
