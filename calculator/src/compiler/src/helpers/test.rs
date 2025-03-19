@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::fmt::{Debug, Formatter, Result};
 
 /// This is a struct for simplifying the debugging of a large number of tokens/something else.

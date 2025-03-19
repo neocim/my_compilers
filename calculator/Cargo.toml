@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["bin", "compiler"]
+members = ["src/bin", "src/compiler"]
 
 [profile.release]
 opt-level = 3
