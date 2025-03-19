@@ -7,7 +7,7 @@ use crate::{
         Ast, BinOp, Expr, Lit, Stmt,
     },
     errors::{
-        diagnostic::{DiagnosticCtxt, DiagnosticMsgs},
+        diagnostic::{DiagnosticCtxt, DiagnosticMsg},
         emitter::Emitter,
     },
     helpers::test::DebugHelper,
@@ -17,8 +17,8 @@ use crate::{
 struct MockEmitter;
 
 impl Emitter for MockEmitter {
-    fn emit_diag(&self, diag_msgs: &DiagnosticMsgs) {
-        panic!("{:?}", diag_msgs)
+    fn emit_diag(&self, diag_msg: &DiagnosticMsg) {
+        panic!("{:?}", diag_msg)
     }
 }
 

@@ -44,13 +44,11 @@ impl<'a> ProgramSess<'a> {
         }
     }
 
-    pub fn run_with_exit(&self) -> Result<(), Diagnostic> {
+    pub fn run_with_exit(&self) {
         match &self.file_path {
             Some(path) => self.exec_with_exit(path.as_path()),
             None => self.exec_many_with_exit(),
         }
-
-        Ok(())
     }
 
     fn exec_many_with_exit(&self) {
@@ -85,22 +83,17 @@ impl<'a> ProgramSess<'a> {
     }
 
     fn exec_with_exit(&self, path: &std::path::Path) {
+        println!("Compiling program `{}`...", path.display());
+
+        // Why `Err(_)`s? We use `DiagnosticHandler::emit_err()` in the earlier stages of compilation,
+        // that displays and returning error, so here we don't need this error for output/something else.
         let program = match self.get_program(path) {
             Ok(program) => program,
-            Err(err) => {
-                err.emit();
-                exit(1)
-            }
+            Err(_) => exit(1),
         };
-
-        println!("Compiling program with path `{}`...", path.display());
-
         let res = match program.compile() {
             Ok(program) => program,
-            Err(err) => {
-                err.emit();
-                exit(1)
-            }
+            Err(_) => exit(1),
         };
 
         match res.kind {

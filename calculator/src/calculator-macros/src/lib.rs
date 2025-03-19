@@ -24,9 +24,7 @@ pub fn into_diag_derive(input: TokenStream) -> TokenStream {
     let implementation = quote! {
         Diagnostic::new(
             diag_ctxt,
-            DiagnosticMsgs::new(vec![DiagnosticMsg::new(
-                format!(#diagnostic_attr, #(self.#field_names),*).into(),
-            )]),
+            DiagnosticMsg::new(format!(#diagnostic_attr, #(self.#field_names),*).into(),)
         )
     };
 

@@ -24,9 +24,6 @@ impl CliLauncher {
             }
         };
 
-        if let Err(err) = psess.run_with_exit() {
-            err.emit();
-            std::process::exit(1);
-        }
+        psess.run_with_exit();
     }
 }

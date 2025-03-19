@@ -6,12 +6,12 @@ pub trait IntoDiagnostic<'a> {
     fn into_diag(&self, diag_ctxt: &'a DiagnosticCtxt) -> Diagnostic<'a>;
 }
 
-/// The main struct for diagnostics. Its used to store errors in `DiagnosticMsgs`
+/// The main struct for diagnostics. Its used to store errors in `DiagnosticMsg`
 /// and various diagnostic parameters stored in `DiagnosticCtxt`.
 #[derive(Debug)]
 pub struct Diagnostic<'a> {
     diag_ctxt: &'a DiagnosticCtxt,
-    diag_msgs: DiagnosticMsgs<'a>,
+    diag_msg: DiagnosticMsg<'a>,
 }
 
 /// The struct to store diagnostic parameters such as emitter, etc.
@@ -28,25 +28,20 @@ pub struct DiagnosticHandler<'a> {
 }
 
 #[derive(Debug)]
-pub struct DiagnosticMsgs<'s> {
-    msgs: Vec<DiagnosticMsg<'s>>,
-}
-
-#[derive(Debug)]
 pub struct DiagnosticMsg<'s> {
     msg: Cow<'s, str>,
 }
 
 impl<'a> Diagnostic<'a> {
-    pub fn new(diag_ctxt: &'a DiagnosticCtxt, diag_msgs: DiagnosticMsgs<'a>) -> Self {
+    pub fn new(diag_ctxt: &'a DiagnosticCtxt, diag_msg: DiagnosticMsg<'a>) -> Self {
         Self {
             diag_ctxt,
-            diag_msgs,
+            diag_msg,
         }
     }
 
     pub fn emit(&self) {
-        self.diag_ctxt.emitter.emit_diag(&self.diag_msgs);
+        self.diag_ctxt.emitter.emit_diag(&self.diag_msg);
     }
 }
 
@@ -75,16 +70,6 @@ impl<'a> DiagnosticHandler<'a> {
     // Create a `Diagnostic` from error that we can emit/return later
     pub fn struct_err(self, err: impl IntoDiagnostic<'a>) -> Diagnostic<'a> {
         err.into_diag(&self.diag_ctxt)
-    }
-}
-
-impl<'s> DiagnosticMsgs<'s> {
-    pub fn new(msgs: Vec<DiagnosticMsg<'s>>) -> Self {
-        Self { msgs }
-    }
-
-    pub fn get_msgs(&self) -> &Vec<DiagnosticMsg<'s>> {
-        &self.msgs
     }
 }
 

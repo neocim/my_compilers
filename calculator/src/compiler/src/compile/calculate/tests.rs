@@ -9,8 +9,8 @@ use super::Program;
 struct MockEmitter;
 
 impl Emitter for MockEmitter {
-    fn emit_diag(&self, diag_msgs: &crate::errors::diagnostic::DiagnosticMsgs) {
-        panic!("{:?}", diag_msgs)
+    fn emit_diag(&self, diag_msg: &crate::errors::diagnostic::DiagnosticMsg) {
+        panic!("{:?}", diag_msg)
     }
 }
 

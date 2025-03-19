@@ -1,9 +1,9 @@
-use super::diagnostic::DiagnosticMsgs;
+use super::diagnostic::DiagnosticMsg;
 
 pub type DynEmitter = dyn Emitter;
 
 pub trait Emitter: std::fmt::Debug {
-    fn emit_diag(&self, diag_msgs: &DiagnosticMsgs);
+    fn emit_diag(&self, diag_msg: &DiagnosticMsg);
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -14,15 +14,13 @@ impl StdoutEmitter {
         StdoutEmitter
     }
 
-    pub fn emit(&self, diag_msgs: &DiagnosticMsgs) {
-        for dm in diag_msgs.get_msgs().iter() {
-            println!("Error: {}", dm.get_msg());
-        }
+    pub fn emit(&self, diag_msg: &DiagnosticMsg) {
+        println!("Error: {}", diag_msg.get_msg());
     }
 }
 
 impl Emitter for StdoutEmitter {
-    fn emit_diag(&self, diag_msgs: &DiagnosticMsgs) {
-        self.emit(diag_msgs);
+    fn emit_diag(&self, diag_msg: &DiagnosticMsg) {
+        self.emit(diag_msg);
     }
 }
