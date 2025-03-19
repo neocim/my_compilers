@@ -83,7 +83,7 @@ impl<'a> Program<'a> {
         }
     }
 
-    fn from_source(
+    pub fn from_source(
         src: &str,
         path: String,
         diag_ctxt: &'a DiagnosticCtxt,

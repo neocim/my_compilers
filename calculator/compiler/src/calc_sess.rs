@@ -1,20 +1,22 @@
-mod errors;
-
 use std::{
     env,
     io::{self, ErrorKind},
+    process::exit,
 };
 
-use errors::CompileError;
-
 use crate::{
-    compile::{Compile as _, Program, SOURCE_FILE_EXTENSION},
+    ast_lowering::ast::LiteralKind,
+    compile::{Compile, Program, SOURCE_FILE_EXTENSION},
     errors::diagnostic::{Diagnostic, DiagnosticCtxt},
 };
 
 pub struct CalcSess<'a> {
-    cur_dir: std::path::PathBuf,
     diag_ctxt: &'a DiagnosticCtxt,
+    cur: std::path::PathBuf,
+    // if we have a specific file path, it will be `Some()`
+    // and `CalcSess::exec_with_display()` will be called. Otherwise, we will go through all the files
+    // in the current directory and execute them.
+    file_path: Option<std::path::PathBuf>,
 }
 
 impl<'a> CalcSess<'a> {
@@ -23,73 +25,107 @@ impl<'a> CalcSess<'a> {
 
         match env::set_current_dir(path) {
             Ok(()) => Ok(Self {
-                cur_dir: std::path::PathBuf::from(path),
+                cur: std::path::PathBuf::from(path),
                 diag_ctxt,
+                file_path: None,
             }),
             Err(err) if ErrorKind::NotADirectory == err.kind() && path.is_file() => {
                 // if its a file, then we can be sure that it has a parent
                 env::set_current_dir(
                     path.parent()
-                        .expect("This file is does not contains a parent directory"),
+                        .expect("This is file does not contains a parent directory"),
                 )?;
-
                 Ok(Self {
-                    cur_dir: env::current_dir()?,
+                    cur: env::current_dir()?,
                     diag_ctxt,
+                    file_path: Some(std::path::PathBuf::from(path)),
                 })
             }
             Err(err) => Err(err),
         }
     }
 
-    pub fn compile(&self) -> Result<(), Diagnostic<'a>> {
-        let programs = self.get_programs()?;
-        for program in programs.into_iter() {
-            let program = program?;
-            let res = program.compile()?;
-            println!(
-                "Running `{}`..\nOutput of a program: `{}`",
-                program.get_path(),
-                res.get_int().unwrap()
-            );
+    pub fn compile(&self) -> Result<(), Diagnostic> {
+        match &self.file_path {
+            Some(path) => self.exec_with_display(path.as_path()),
+            None => self.exec_many_with_display(),
         }
 
         Ok(())
     }
 
-    fn get_programs(&self) -> Result<Vec<Result<Program<'a>, Diagnostic<'a>>>, Diagnostic<'a>> {
-        let mut programs = Vec::new();
-
-        for src_file in self.get_cur_dir().read_dir().map_err(|err| {
-            self.diag_ctxt
-                .handle()
-                .emit_err(CompileError::new(err.to_string()))
-        })? {
-            let src_path = src_file
-                .map_err(|err| {
-                    self.diag_ctxt
-                        .handle()
-                        .emit_err(CompileError::new(err.to_string()))
-                })?
-                .path();
-            let src_path = src_path.as_path();
-
-            if self.is_correct_source_file(src_path) {
-                programs.push(Program::from_source_file(
-                    src_path.to_string_lossy().to_string(),
-                    self.diag_ctxt,
-                ));
+    fn exec_many_with_display(&self) {
+        let cur = match self.read_cur_dir() {
+            Ok(cur) => cur,
+            Err(err) => {
+                println!(
+                    "Failed to read directory `{}`: {err}",
+                    self.get_cur_dir().display()
+                );
+                exit(1)
             }
+        };
+
+        for file in cur {
+            let path = match file {
+                Ok(file) => file,
+                Err(err) => {
+                    println!(
+                        "Failed to open directory `{}`: {err}",
+                        self.get_cur_dir().display()
+                    );
+                    exit(1)
+                }
+            }
+            .path();
+
+            self.exec_with_display(path.as_path());
         }
-
-        Ok(programs)
     }
 
-    pub fn get_cur_dir(&self) -> &std::path::Path {
-        self.cur_dir.as_path()
+    fn exec_with_display(&self, path: &std::path::Path) {
+        let program = match self.get_program(path) {
+            Ok(program) => program,
+            Err(err) => {
+                err.emit();
+                exit(1)
+            }
+        };
+
+        println!("Compiling program with path `{}`...", path.display());
+
+        let res = match program.compile() {
+            Ok(program) => program,
+            Err(err) => {
+                err.emit();
+                exit(1)
+            }
+        };
+
+        match res.kind {
+            LiteralKind::Int { val } => println!("Result: {val}"),
+            LiteralKind::Float { val } => println!("Result: {val}"),
+        }
     }
 
-    fn is_correct_source_file(&self, path: &std::path::Path) -> bool {
+    fn get_program(&self, path: &std::path::Path) -> Result<Program, Diagnostic> {
+        Program::from_source_file(path.to_string_lossy().to_string(), self.diag_ctxt)
+    }
+
+    fn get_program_by_path(&self, path: String) -> Result<Program, Diagnostic> {
+        Program::from_source_file(path, self.diag_ctxt)
+    }
+
+    fn read_cur_dir(&self) -> Result<std::fs::ReadDir, std::io::Error> {
+        self.get_cur_dir().read_dir()
+    }
+
+    fn get_cur_dir(&self) -> &std::path::Path {
+        self.cur.as_path()
+    }
+
+    fn is_correct_source_file(&self, path: &str) -> bool {
+        let path = std::path::Path::new(path);
         if let Some(ext) = path.extension() {
             ext == SOURCE_FILE_EXTENSION
         } else {

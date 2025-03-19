@@ -1,4 +1,7 @@
-use crate::errors::{diagnostic::DiagnosticCtxt, emitter::Emitter};
+use crate::{
+    ast_lowering::ast::{Lit, LiteralKind},
+    errors::{diagnostic::DiagnosticCtxt, emitter::Emitter},
+};
 
 use super::Program;
 
@@ -17,9 +20,12 @@ fn test_calculate() {
     let res = Program::from_source("2 + 2 * 2", "".to_string(), &diag_ctxt)
         .unwrap()
         .compile()
-        .unwrap()
-        .get_int()
         .unwrap();
 
-    assert_eq!(res, 6);
+    assert_eq!(
+        res,
+        Lit {
+            kind: LiteralKind::Int { val: 6 }
+        }
+    );
 }
