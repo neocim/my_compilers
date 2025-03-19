@@ -10,7 +10,7 @@ use crate::{
     errors::diagnostic::{Diagnostic, DiagnosticCtxt},
 };
 
-pub struct CalcSess<'a> {
+pub struct ProgramSess<'a> {
     diag_ctxt: &'a DiagnosticCtxt,
     cur: std::path::PathBuf,
     // if we have a specific file path, it will be `Some()`
@@ -19,7 +19,7 @@ pub struct CalcSess<'a> {
     file_path: Option<std::path::PathBuf>,
 }
 
-impl<'a> CalcSess<'a> {
+impl<'a> ProgramSess<'a> {
     pub fn from_path(path: &str, diag_ctxt: &'a DiagnosticCtxt) -> Result<Self, io::Error> {
         let path = std::path::Path::new(path);
 
@@ -45,16 +45,16 @@ impl<'a> CalcSess<'a> {
         }
     }
 
-    pub fn compile(&self) -> Result<(), Diagnostic> {
+    pub fn run_with_exit(&self) -> Result<(), Diagnostic> {
         match &self.file_path {
-            Some(path) => self.exec_with_display(path.as_path()),
-            None => self.exec_many_with_display(),
+            Some(path) => self.exec_with_exit(path.as_path()),
+            None => self.exec_many_with_exit(),
         }
 
         Ok(())
     }
 
-    fn exec_many_with_display(&self) {
+    fn exec_many_with_exit(&self) {
         let cur = match self.read_cur_dir() {
             Ok(cur) => cur,
             Err(err) => {
@@ -79,11 +79,11 @@ impl<'a> CalcSess<'a> {
             }
             .path();
 
-            self.exec_with_display(path.as_path());
+            self.exec_with_exit(path.as_path());
         }
     }
 
-    fn exec_with_display(&self, path: &std::path::Path) {
+    fn exec_with_exit(&self, path: &std::path::Path) {
         let program = match self.get_program(path) {
             Ok(program) => program,
             Err(err) => {
@@ -125,8 +125,7 @@ impl<'a> CalcSess<'a> {
     }
 
     fn is_correct_source_file(&self, path: &str) -> bool {
-        let path = std::path::Path::new(path);
-        if let Some(ext) = path.extension() {
+        if let Some(ext) = std::path::Path::new(path).extension() {
             ext == SOURCE_FILE_EXTENSION
         } else {
             false
