@@ -6,7 +6,7 @@ use std::{
 
 use crate::{
     ast_lowering::ast::LiteralKind,
-    compile::{Compile, Program, SOURCE_FILE_EXTENSION},
+    compile::{Compile, Program},
     errors::diagnostic::{Diagnostic, DiagnosticCtxt},
 };
 
@@ -112,23 +112,11 @@ impl<'a> ProgramSess<'a> {
         Program::from_source_file(path.to_string_lossy().to_string(), self.diag_ctxt)
     }
 
-    fn get_program_by_path(&self, path: String) -> Result<Program, Diagnostic> {
-        Program::from_source_file(path, self.diag_ctxt)
-    }
-
     fn read_cur_dir(&self) -> Result<std::fs::ReadDir, std::io::Error> {
         self.get_cur_dir().read_dir()
     }
 
     fn get_cur_dir(&self) -> &std::path::Path {
         self.cur.as_path()
-    }
-
-    fn is_correct_source_file(&self, path: &str) -> bool {
-        if let Some(ext) = std::path::Path::new(path).extension() {
-            ext == SOURCE_FILE_EXTENSION
-        } else {
-            false
-        }
     }
 }
