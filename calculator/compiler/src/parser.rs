@@ -70,30 +70,32 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_expr(&mut self) -> ParseResult<'a, Expr> {
-        let lterm = self.parse_term()?;
+        let mut lhs = self.parse_term()?;
 
-        match self.cur_tok.clone() {
-            Token::BinOp(kind) if BinOpKind::Sub == kind || BinOpKind::Add == kind => {
-                let rexpr = self.parse_expr()?;
+        loop {
+            match self.cur_tok.clone() {
+                Token::BinOp(kind) if BinOpKind::Sub == kind || BinOpKind::Add == kind => {
+                    let rhs = self.parse_term()?;
 
-                Ok(Expr::BinOp(BinOp::new(lterm, kind, rexpr)))
+                    lhs = Expr::BinOp(BinOp::new(lhs, kind, rhs));
+                }
+                _ => return Ok(lhs),
             }
-            Token::Eof => Ok(lterm),
-            _ => Ok(lterm),
         }
     }
 
     fn parse_term(&mut self) -> ParseResult<'a, Expr> {
-        let lfactor = self.parse_factor()?;
+        let mut lhs = self.parse_factor()?;
 
-        match self.advance() {
-            Token::BinOp(kind) if BinOpKind::Div == kind || BinOpKind::Mul == kind => {
-                let rexpr = self.parse_expr()?;
+        loop {
+            match self.advance() {
+                Token::BinOp(kind) if BinOpKind::Div == kind || BinOpKind::Mul == kind => {
+                    let rhs = self.parse_factor()?;
 
-                Ok(Expr::BinOp(BinOp::new(lfactor, kind, rexpr)))
+                    lhs = Expr::BinOp(BinOp::new(lhs, kind, rhs));
+                }
+                _ => return Ok(lhs),
             }
-            Token::Eof => Ok(lfactor),
-            _ => Ok(lfactor),
         }
     }
 
@@ -104,12 +106,11 @@ impl<'a> Parser<'a> {
                 let expr = self.parse_expr()?;
 
                 if !self.expect(Token::CloseParen) {
-                    Err(self
+                    return Err(self
                         .handle()
-                        .emit_err(ExpectedCloseParen::new(format!("{:?}", self.cur_tok))))
-                } else {
-                    Ok(expr)
+                        .emit_err(ExpectedCloseParen::new(format!("{:?}", self.cur_tok))));
                 }
+                Ok(expr)
             }
             _ => Err(self
                 .handle()
