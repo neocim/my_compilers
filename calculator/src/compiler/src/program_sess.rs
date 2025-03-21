@@ -13,6 +13,7 @@ pub struct ProgramSess<'a> {
     // and `CalcSess::exec_with_display()` will be called. Otherwise, we will go through all the files
     // in the current directory and execute them.
     file_path: Option<std::path::PathBuf>,
+    has_program: bool,
 }
 
 impl<'a> ProgramSess<'a> {
@@ -25,6 +26,7 @@ impl<'a> ProgramSess<'a> {
                     cur: env::current_dir()?,
                     diag_ctxt,
                     file_path: None,
+                    has_program: false,
                 }
             }),
             Err(err) if io::ErrorKind::NotADirectory == err.kind() && path.is_file() => {
@@ -38,20 +40,22 @@ impl<'a> ProgramSess<'a> {
                     cur: env::current_dir()?,
                     diag_ctxt,
                     file_path: Some(env::current_dir()?.join(path.file_name().unwrap())),
+                    has_program: false,
                 })
             }
             Err(err) => Err(err),
         }
     }
 
-    pub fn run_with_exit(&self) {
-        match &self.file_path {
+    pub fn run_with_exit(&mut self) {
+        let path = &self.file_path;
+        match path {
             Some(path) => self.exec_with_exit(path.as_path()),
             None => self.exec_many_with_exit(),
         }
     }
 
-    fn exec_many_with_exit(&self) {
+    fn exec_many_with_exit(&mut self) {
         let cur = match self.read_cur_dir() {
             Ok(cur) => cur,
             Err(err) => {
@@ -77,8 +81,16 @@ impl<'a> ProgramSess<'a> {
             .path();
 
             if self.is_valid_file(path.as_path()) {
+                self.has_program = true;
                 self.exec_with_exit(path.as_path());
             }
+        }
+
+        if self.has_program == false {
+            println!(
+                "Warning: not a single program was found in the directory `{}`",
+                self.get_cur_dir().display()
+            );
         }
     }
 
