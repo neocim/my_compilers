@@ -25,7 +25,7 @@ impl<'a> Cursor<'a> {
         };
 
         let token = match ch {
-            '0'..'9' => self.eat_num(ch),
+            '0'..='9' => self.eat_num(ch),
             '+' => Token::Plus,
             '-' => Token::Minus,
             '*' => Token::Star,
