@@ -18,6 +18,10 @@ cd my_compilers/calculator
 cargo run -- -p ./examples/
 ```
 
+<h2>Stage</h2>
+
+**Finished**. There's everything here that I wanted to practice with. My next project is a simple language that will most likely be without a standard library. I think it will have a simpler frontend than in this compiler, and I also want it to be translated into llvm ir.
+
 <h2>About</h2>
 This is my first working compiler. 
 
