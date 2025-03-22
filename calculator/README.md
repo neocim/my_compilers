@@ -38,7 +38,3 @@ It's all. Then why is there so much code for a simple calculator? I tried to wri
 - Different types of code representation are used at different stages of compilation. For example, a lexer returns a token stream, a parser returns an ast, and a [lower](https://github.com/neocim/my_compilers/blob/master/calculator/src/compiler/src/ast_lowering.rs) uses its lowered ast.
 - Сompiler [uses](https://github.com/neocim/my_compilers/blob/master/calculator/src/compiler/src/parser.rs) the [top-down recursive descent parser](https://en.wikipedia.org/wiki/Top-down_parsing), which builds an ast from our token stream.
 - To return and output errors to the user, a simplified [diagnostic system](https://github.com/neocim/my_compilers/blob/master/calculator/src/compiler/src/errors/diagnostic.rs) from [rustc](https://github.com/rust-lang/rust/tree/master) is used, which can be used for [error recovery](https://en.wikipedia.org/wiki/Burke%E2%80%93Fisher_error_repair) (im not sure if this link is specifically about error recovery, but it seems to fit by definition.).
-
-<h4>TODO!</h4>
-
-- Add error recovery
