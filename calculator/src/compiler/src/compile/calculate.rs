@@ -152,9 +152,30 @@ impl<'a> Program<'a> {
                     val: self.apply_binop(lhs, rhs, *op),
                 },
             }),
-            (Lit { kind: lty }, Lit { kind: rty }) => Err(self.diag_ctxt.handle().emit_err(
-                MismatchedTypes::new(format!("{:?}", lty), format!("{:?}", rty)),
-            )),
+            (Lit { kind: lty }, Lit { kind: rty }) => {
+                self.diag_ctxt.handle().emit_warn(MismatchedTypes::new(
+                    format!("{:?}", lty),
+                    format!("{:?}", rty),
+                ));
+
+                let (lhs, rhs) = self.mismatched_lit_ty(lty, rty);
+                let res = self.apply_binop(lhs, rhs, *op);
+                Ok(Lit {
+                    kind: LiteralKind::Float { val: res },
+                })
+            }
+        }
+    }
+
+    // if we see mismatched types, try to convert it to one type
+    fn mismatched_lit_ty(&self, lty: LiteralKind, rty: LiteralKind) -> (f32, f32) {
+        (self.to_float_ty(lty), self.to_float_ty(rty))
+    }
+
+    fn to_float_ty(&self, ty: LiteralKind) -> f32 {
+        match ty {
+            LiteralKind::Int { val } => val as f32,
+            LiteralKind::Float { val } => val,
         }
     }
 

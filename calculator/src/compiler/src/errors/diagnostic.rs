@@ -43,6 +43,10 @@ impl<'a> Diagnostic<'a> {
     pub fn emit(&self) {
         self.diag_ctxt.emitter.emit_diag(&self.diag_msg);
     }
+
+    pub fn emit_warn(&self) {
+        self.diag_ctxt.emitter.emit_warn(&self.diag_msg);
+    }
 }
 
 impl DiagnosticCtxt {
@@ -65,6 +69,10 @@ impl<'a> DiagnosticHandler<'a> {
         let err = self.struct_err(err);
         err.emit();
         err
+    }
+
+    pub fn emit_warn(self, err: impl IntoDiagnostic<'a>) {
+        self.struct_err(err).emit_warn();
     }
 
     // Create a `Diagnostic` from error that we can emit/return later

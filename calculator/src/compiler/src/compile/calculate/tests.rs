@@ -1,6 +1,9 @@
 use crate::{
     ast_lowering::ast::{Lit, LiteralKind},
-    errors::{diagnostic::DiagnosticCtxt, emitter::Emitter},
+    errors::{
+        diagnostic::{DiagnosticCtxt, DiagnosticMsg},
+        emitter::Emitter,
+    },
 };
 
 use super::Program;
@@ -9,7 +12,11 @@ use super::Program;
 struct MockEmitter;
 
 impl Emitter for MockEmitter {
-    fn emit_diag(&self, diag_msg: &crate::errors::diagnostic::DiagnosticMsg) {
+    fn emit_diag(&self, diag_msg: &DiagnosticMsg) {
+        panic!("{:?}", diag_msg)
+    }
+
+    fn emit_warn(&self, diag_msg: &DiagnosticMsg) {
         panic!("{:?}", diag_msg)
     }
 }

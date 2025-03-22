@@ -20,6 +20,10 @@ impl Emitter for MockEmitter {
     fn emit_diag(&self, diag_msg: &DiagnosticMsg) {
         panic!("{:?}", diag_msg)
     }
+
+    fn emit_warn(&self, diag_msg: &DiagnosticMsg) {
+        panic!("{:?}", diag_msg)
+    }
 }
 
 #[test]
