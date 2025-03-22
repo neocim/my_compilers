@@ -89,7 +89,11 @@ impl<'a> Parser<'a> {
 
         loop {
             match self.advance() {
-                Token::BinOp(kind) if BinOpKind::Div == kind || BinOpKind::Mul == kind => {
+                Token::BinOp(kind)
+                    if BinOpKind::Div == kind
+                        || BinOpKind::Mul == kind
+                        || BinOpKind::Mod == kind =>
+                {
                     let rhs = self.parse_factor()?;
 
                     lhs = Expr::BinOp(BinOp::new(lhs, kind, rhs));
