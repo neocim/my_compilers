@@ -28,22 +28,65 @@ impl<'src> Cursor<'src> {
                 '/' => TokenKind::Comment,
                 _ => TokenKind::Slash,
             },
+            '(' => TokenKind::OpenParen,
+            ')' => TokenKind::CloseParen,
+            '{' => TokenKind::OpenBrace,
+            '}' => TokenKind::CloseBrace,
+            '[' => TokenKind::OpenBracket,
+            ']' => TokenKind::CloseBracket,
+            '!' => TokenKind::Bang,
+            '=' => TokenKind::Eq,
+            '<' => TokenKind::LessThan,
+            '>' => TokenKind::GreaterThan,
+            '+' => TokenKind::Plus,
+            '-' => TokenKind::Minus,
+            '%' => TokenKind::Percent,
+            '*' => TokenKind::Star,
+            ':' => TokenKind::Colon,
+            ';' => TokenKind::SemiColon,
+            ',' => TokenKind::Comma,
+            '&' => TokenKind::And,
+            '|' => TokenKind::Or,
+            EOF_CHAR => TokenKind::Eof,
+            ch if is_whitespace(ch) => {
+                self.advance_while(is_whitespace);
+                TokenKind::Whitespace
+            }
+            ch if is_ident_ch(ch) => {
+                self.advance_while(is_ident_ch);
+
+                if !is_ident_ch(self.next_ahead()) {
+                    TokenKind::Unknown
+                } else {
+                    TokenKind::Ident
+                }
+            }
             _ => TokenKind::Unknown,
         };
 
-        Token::new(kind, self.get_token_size())
+        Token::new(kind, self.get_token_len())
     }
 
     fn next_ch(&mut self) -> Option<char> {
         self.src.next()
     }
 
-    // does not advance `self.src`
+    /// Helps to look a char ahead. Does not advance `self.src`.
     fn next_ahead(&mut self) -> char {
         self.src.clone().next().unwrap_or(EOF_CHAR)
     }
 
-    fn get_token_size(&mut self) -> u32 {
+    fn advance_while<F: Fn(char) -> bool>(&mut self, cond: F) {
+        while cond(self.next_ahead()) && !self.is_eof() {
+            self.next_ch();
+        }
+    }
+
+    fn is_eof(&self) -> bool {
+        self.src.as_str().is_empty()
+    }
+
+    fn get_token_len(&mut self) -> u32 {
         let res = self.remaining - self.src.as_str().len() as u32;
         self.reset_pos();
         res
@@ -54,9 +97,9 @@ impl<'src> Cursor<'src> {
     }
 }
 
-fn is_whitespace(c: char) -> bool {
+pub fn is_whitespace(ch: char) -> bool {
     matches!(
-        c,
+        ch,
         // Usual ASCII suspects
         '\u{0009}'   // \t
         | '\u{000A}' // \n
@@ -76,4 +119,8 @@ fn is_whitespace(c: char) -> bool {
         | '\u{2028}' // LINE SEPARATOR
         | '\u{2029}' // PARAGRAPH SEPARATOR
     )
+}
+
+fn is_ident_ch(ch: char) -> bool {
+    ch.is_ascii()
 }
