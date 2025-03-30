@@ -133,8 +133,8 @@ impl<'src> Cursor<'src> {
         false
     }
 
-    /// It does not check the validity of the symbol. It can only say
-    /// that the symbol is not terminated. For example, incorrect characters
+    /// It does not check the validity of the characters. It can only say
+    /// that the character is not terminated. For example, incorrect characters
     /// such as `'\m'`, `'abc'` and others will simply be eaten. Checking for the
     /// correctness of the characters is at the parsing stage.
     fn handle_char(&mut self) -> TokenKind {
@@ -179,7 +179,7 @@ impl<'src> Cursor<'src> {
         self.src.next()
     }
 
-    /// Helps to look a char ahead. Does not advance `self.src`.
+    /// Helps to look a character ahead. Does not advance `self.src`.
     fn next_ahead(&self) -> char {
         self.src.clone().next().unwrap_or(EOF_CHAR)
     }
