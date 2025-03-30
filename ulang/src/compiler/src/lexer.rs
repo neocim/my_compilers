@@ -3,4 +3,9 @@ mod cursor;
 mod tests;
 mod token;
 
-struct Lexer {}
+pub use {
+    cursor::Cursor,
+    token::{LiteralKind, Token, TokenKind},
+};
+
+pub struct Lexer {}

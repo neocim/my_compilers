@@ -1,5 +1,8 @@
 use std::str::Chars;
 
+// https://www.unicode.org/reports/tr31/
+use unicode_xid::UnicodeXID;
+
 use super::token::{LiteralKind, Token, TokenKind};
 
 const EOF_CHAR: char = '\0';
@@ -44,14 +47,19 @@ impl<'src> Cursor<'src> {
             '&' => TokenKind::And,
             '|' => TokenKind::Or,
             '/' => match self.next_ahead() {
-                '/' => TokenKind::Comment,
+                '/' => {
+                    self.next_ch();
+                    self.advance_while(|ch| !(ch == '\n'));
+
+                    TokenKind::Comment
+                }
                 _ => TokenKind::Slash,
             },
             '0'..='9' => self.handle_number(),
             '"' => self.handle_str(),
             '\'' => self.handle_char(),
             ch if is_whitespace(ch) => self.handle_whitespaces(),
-            ch if is_ident_ch(ch) => self.handle_ident(),
+            ch if is_ident_start(ch) => self.handle_ident(),
             EOF_CHAR => TokenKind::Eof,
             _ => TokenKind::Unknown,
         };
@@ -65,13 +73,9 @@ impl<'src> Cursor<'src> {
     }
 
     fn handle_ident(&mut self) -> TokenKind {
-        self.advance_while(is_ident_ch);
+        self.advance_while(is_ident_continue);
 
-        if !is_ident_ch(self.next_ahead()) {
-            TokenKind::Unknown
-        } else {
-            TokenKind::Ident
-        }
+        TokenKind::Ident
     }
 
     fn handle_number(&mut self) -> TokenKind {
@@ -122,8 +126,10 @@ impl<'src> Cursor<'src> {
                     self.next_ch();
                     self.next_ch();
                 }
-                '"' => return true,
-                '\n' if self.second_ahead() != '\'' => break,
+                '"' => {
+                    self.next_ch();
+                    return true;
+                }
                 EOF_CHAR => break,
                 _ => {
                     self.next_ch();
@@ -211,7 +217,7 @@ impl<'src> Cursor<'src> {
     }
 }
 
-pub fn is_whitespace(ch: char) -> bool {
+fn is_whitespace(ch: char) -> bool {
     matches!(
         ch,
         // Usual ASCII suspects
@@ -235,6 +241,10 @@ pub fn is_whitespace(ch: char) -> bool {
     )
 }
 
-fn is_ident_ch(ch: char) -> bool {
-    ch.is_ascii()
+fn is_ident_start(ch: char) -> bool {
+    UnicodeXID::is_xid_start(ch)
+}
+
+fn is_ident_continue(ch: char) -> bool {
+    UnicodeXID::is_xid_continue(ch)
 }

@@ -1,1 +1,1 @@
-mod lexer;
+pub(crate) mod lexer;

@@ -1,6 +1,6 @@
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Token {
-    kind: TokenKind,
+    pub(crate) kind: TokenKind,
     len: u32,
 }
 
