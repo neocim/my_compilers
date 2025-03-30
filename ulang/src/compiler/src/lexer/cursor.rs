@@ -24,10 +24,6 @@ impl<'src> Cursor<'src> {
         };
 
         let kind = match ch {
-            '/' => match self.next_ahead() {
-                '/' => TokenKind::Comment,
-                _ => TokenKind::Slash,
-            },
             '(' => TokenKind::OpenParen,
             ')' => TokenKind::CloseParen,
             '{' => TokenKind::OpenBrace,
@@ -47,27 +43,35 @@ impl<'src> Cursor<'src> {
             ',' => TokenKind::Comma,
             '&' => TokenKind::And,
             '|' => TokenKind::Or,
+            '/' => match self.next_ahead() {
+                '/' => TokenKind::Comment,
+                _ => TokenKind::Slash,
+            },
             '0'..='9' => self.handle_number(),
             '"' => self.handle_str(),
             '\'' => self.handle_char(),
-            ch if is_whitespace(ch) => {
-                self.advance_while(is_whitespace);
-                TokenKind::Whitespace
-            }
-            ch if is_ident_ch(ch) => {
-                self.advance_while(is_ident_ch);
-
-                if !is_ident_ch(self.next_ahead()) {
-                    TokenKind::Unknown
-                } else {
-                    TokenKind::Ident
-                }
-            }
+            ch if is_whitespace(ch) => self.handle_whitespaces(),
+            ch if is_ident_ch(ch) => self.handle_ident(),
             EOF_CHAR => TokenKind::Eof,
             _ => TokenKind::Unknown,
         };
 
         Token::new(kind, self.get_token_len())
+    }
+
+    fn handle_whitespaces(&mut self) -> TokenKind {
+        self.advance_while(is_whitespace);
+        TokenKind::Whitespace
+    }
+
+    fn handle_ident(&mut self) -> TokenKind {
+        self.advance_while(is_ident_ch);
+
+        if !is_ident_ch(self.next_ahead()) {
+            TokenKind::Unknown
+        } else {
+            TokenKind::Ident
+        }
     }
 
     fn handle_number(&mut self) -> TokenKind {
