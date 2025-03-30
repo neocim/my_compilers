@@ -49,7 +49,7 @@ fn hello_world() {
             Token::new(TokenKind::CloseParen, 1),
             Token::new(TokenKind::SemiColon, 1),
             Token::new(TokenKind::Whitespace, 1),
-            // -- `}`
+            // -- `}` --
             Token::new(TokenKind::CloseBrace, 1),
         ]
     );
