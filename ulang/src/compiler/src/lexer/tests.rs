@@ -25,7 +25,9 @@ fn hello_world() {
     assert_eq!(
         expected,
         vec![
+            // -- `// This function displays `Hello, world!` in the terminal` --
             Token::new(TokenKind::Comment, 57),
+            // -- `fn hello_world() {` --
             Token::new(TokenKind::Whitespace, 1),
             Token::new(TokenKind::Ident, 2),
             Token::new(TokenKind::Whitespace, 1),
@@ -35,6 +37,7 @@ fn hello_world() {
             Token::new(TokenKind::Whitespace, 1),
             Token::new(TokenKind::OpenBrace, 1),
             Token::new(TokenKind::Whitespace, 5),
+            // -- `print(\"Hello, world!\");` --
             Token::new(TokenKind::Ident, 5),
             Token::new(TokenKind::OpenParen, 1),
             Token::new(
@@ -46,6 +49,7 @@ fn hello_world() {
             Token::new(TokenKind::CloseParen, 1),
             Token::new(TokenKind::SemiColon, 1),
             Token::new(TokenKind::Whitespace, 1),
+            // -- `}`
             Token::new(TokenKind::CloseBrace, 1),
         ]
     );
