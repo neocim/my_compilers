@@ -1,6 +1,6 @@
 use std::str::Chars;
 
-use super::token::{Token, TokenKind};
+use super::token::{LiteralKind, Token, TokenKind};
 
 const EOF_CHAR: char = '\0';
 
@@ -47,7 +47,9 @@ impl<'src> Cursor<'src> {
             ',' => TokenKind::Comma,
             '&' => TokenKind::And,
             '|' => TokenKind::Or,
-            EOF_CHAR => TokenKind::Eof,
+            '0'..='9' => self.handle_number(),
+            '"' => self.handle_str(),
+            '\'' => self.handle_char(),
             ch if is_whitespace(ch) => {
                 self.advance_while(is_whitespace);
                 TokenKind::Whitespace
@@ -61,10 +63,112 @@ impl<'src> Cursor<'src> {
                     TokenKind::Ident
                 }
             }
+            EOF_CHAR => TokenKind::Eof,
             _ => TokenKind::Unknown,
         };
 
         Token::new(kind, self.get_token_len())
+    }
+
+    fn handle_number(&mut self) -> TokenKind {
+        // eat next digits if there are any
+        self.eat_next_digits();
+
+        match self.next_ahead() {
+            '.' => {
+                // eat point
+                self.next_ch();
+                self.eat_next_digits();
+
+                TokenKind::Lit {
+                    kind: LiteralKind::Float,
+                }
+            }
+            _ => TokenKind::Lit {
+                kind: LiteralKind::Int,
+            },
+        }
+    }
+
+    fn eat_next_digits(&mut self) {
+        loop {
+            match self.next_ahead() {
+                ch if ch.is_numeric() => {
+                    self.next_ch();
+                }
+                _ => break,
+            }
+        }
+    }
+
+    fn handle_str(&mut self) -> TokenKind {
+        TokenKind::Lit {
+            kind: LiteralKind::Str {
+                terminated: self.eat_str(),
+            },
+        }
+    }
+
+    /// Returns true if string is terminated and false otherwise.
+    fn eat_str(&mut self) -> bool {
+        loop {
+            match self.next_ahead() {
+                // skip `\"` characters
+                '\\' if '"' == self.second_ahead() => {
+                    self.next_ch();
+                    self.next_ch();
+                }
+                '"' => return true,
+                '\n' if self.second_ahead() != '\'' => break,
+                EOF_CHAR => break,
+                _ => {
+                    self.next_ch();
+                }
+            }
+        }
+        false
+    }
+
+    /// It does not check the validity of the symbol. It can only say
+    /// that the symbol is not terminated. For example, incorrect characters
+    /// such as `'\m'`, `'abc'` and others will simply be eaten. Checking for the
+    /// correctness of the characters is at the parsing stage.
+    fn handle_char(&mut self) -> TokenKind {
+        TokenKind::Lit {
+            kind: LiteralKind::Char {
+                terminated: self.eat_char(),
+            },
+        }
+    }
+
+    /// Returns true if character is terminated and false otherwise.
+    fn eat_char(&mut self) -> bool {
+        // if true, it's just one characte like `'a'`
+        if self.next_ahead() != '\\' && self.second_ahead() == '\'' {
+            self.next_ch();
+            self.next_ch();
+
+            return true;
+        }
+
+        loop {
+            match self.next_ahead() {
+                '\'' => {
+                    self.next_ch();
+                    return true;
+                }
+                '\\' => {
+                    self.next_ch();
+                    self.next_ch();
+                }
+                '\n' if self.second_ahead() != '\'' => break,
+                EOF_CHAR => break,
+                _ => {
+                    self.next_ch();
+                }
+            }
+        }
+        false
     }
 
     fn next_ch(&mut self) -> Option<char> {
@@ -72,8 +176,14 @@ impl<'src> Cursor<'src> {
     }
 
     /// Helps to look a char ahead. Does not advance `self.src`.
-    fn next_ahead(&mut self) -> char {
+    fn next_ahead(&self) -> char {
         self.src.clone().next().unwrap_or(EOF_CHAR)
+    }
+
+    fn second_ahead(&self) -> char {
+        let mut src = self.src.clone();
+        src.next();
+        src.next().unwrap_or(EOF_CHAR)
     }
 
     fn advance_while<F: Fn(char) -> bool>(&mut self, cond: F) {

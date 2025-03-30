@@ -31,15 +31,15 @@ pub enum TokenKind {
     And,          // `&`
     Or,           // `|`
     Unknown,      // Any unknown token like `#` or `$`
-    Eof,          // Final symbol in file, aka `end of file`, `\0`
+    Eof,          // Final character in the file, aka `end of file`, `\0`
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum LiteralKind {
     Int,
     Float,
-    Char,
-    Str,
+    Char { terminated: bool },
+    Str { terminated: bool },
 }
 
 impl Token {
