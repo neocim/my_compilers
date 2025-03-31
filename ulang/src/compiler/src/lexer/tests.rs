@@ -27,8 +27,8 @@ fn hello_world() {
         vec![
             // -- `// This function displays `Hello, world!` in the terminal` --
             Token::new(TokenKind::Comment, 57),
-            // -- `fn hello_world() {` --
             Token::new(TokenKind::Whitespace, 1),
+            // -- `fn hello_world() {` --
             Token::new(TokenKind::Ident, 2),
             Token::new(TokenKind::Whitespace, 1),
             Token::new(TokenKind::Ident, 11),
