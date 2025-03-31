@@ -24,14 +24,14 @@ pub enum BinOp {
     Mul,         // `*`
     Div,         // `/`
     Mod,         // `%`
-    NotEq,       // `!=`
     LessThan,    // `<`
-    LtEq,        // `<=`
+    LtOrEq,      // `<=`
     GreaterThan, // `>`
-    GtEq,        // `>=`
+    GtOrEq,      // `>=`
+    NotEq,       // `!=`
     Eq,          // `==`
-    And,         // `||`
-    Or,          // `&&`
+    Or,          // `||`
+    And,         // `&&`
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]

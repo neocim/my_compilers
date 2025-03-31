@@ -2,13 +2,15 @@ use crate::span::Span;
 
 use super::Delimiter;
 
+/// A token that is almost the same as in `lexer`, but
+/// is more high-level and convenient for building an AST
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Token {
     kind: TokenKind,
     span: Span,
 }
 
-/// A more generalized token type, unlike `lexer::TokenKind`, which can be more easily
+/// A more generalized token kind, unlike `lexer::TokenKind`, which can be more easily
 /// converted to the desired AST item (for example, `TokenKind::PlusPlus` to `UnOp::UnAdd`)
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum TokenKind {
@@ -16,15 +18,15 @@ pub enum TokenKind {
     Comment,     // Only `//`. We dont support many lines comments like `/* Comment */`
     Ident,       // `int`, `fn`, `while`, etc.
     Whitespace,  // Any whitespace symbol: `\n`, `\t`, ` `, etc.
-    Bang,        // `!`
-    Eq,          // `=`
-    LessThan,    // `<`
-    GreaterThan, // `>`
     Plus,        // `+`
     Minus,       // `-`
     Slash,       // `/`
     Percent,     // `%`
     Star,        // `*`
+    Bang,        // `!`
+    Eq,          // `=`
+    LessThan,    // `<`
+    GreaterThan, // `>`
     StarEq,      // `*=`
     PercentEq,   // `%=`
     SlashEq,     // `/=`
@@ -32,9 +34,10 @@ pub enum TokenKind {
     PlusEq,      // `+=`
     BangEq,      // `!=`
     LtEq,        // `<=`
+    GtEq,        // `>=`
+    EqEq,        // `==`
     PlusPlus,    // `++`
     MinusMinus,  // `--`
-    GtEq,        // `>=`
     OrOr,        // `||`
     AndAnd,      // `&&`
     OpenDelimiter(Delimiter), // `{`, `[`, `(`
