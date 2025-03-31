@@ -49,8 +49,7 @@ impl<'src> Cursor<'src> {
             '/' => match self.next_ahead() {
                 '/' => {
                     self.next_ch();
-                    self.advance_while(|ch| !(ch == '\n'));
-
+                    self.advance_while(|ch| ch != '\n');
                     TokenKind::Comment
                 }
                 _ => TokenKind::Slash,
@@ -58,6 +57,7 @@ impl<'src> Cursor<'src> {
             '0'..='9' => self.handle_number(),
             '"' => self.handle_str(),
             '\'' => self.handle_char(),
+            't' | 'f' => self.handle_bool(ch),
             ch if is_whitespace(ch) => self.handle_whitespaces(),
             ch if is_ident_start(ch) => self.handle_ident(),
             EOF_CHAR => TokenKind::Eof,
@@ -67,6 +67,31 @@ impl<'src> Cursor<'src> {
         Token::new(kind, self.get_token_len())
     }
 
+    fn handle_bool(&mut self, first: char) -> TokenKind {
+        match first {
+            'f' => self.bool_or_ident("alse"),
+            't' => self.bool_or_ident("rue"),
+            // this is an unreachable variant, because we should only call this method if
+            // we see the characters 'f' or 't', but let this check remain anyway.
+            _ => self.handle_ident(),
+        }
+    }
+
+    fn bool_or_ident(&mut self, maybe_bool: &str) -> TokenKind {
+        if self.src.as_str().starts_with(maybe_bool) {
+            self.advance_to(maybe_bool.len() as u32);
+            if !is_ident_continue(self.next_ahead()) {
+                TokenKind::Lit {
+                    kind: LiteralKind::Bool,
+                }
+            } else {
+                self.handle_ident()
+            }
+        } else {
+            self.handle_ident()
+        }
+    }
+
     fn handle_whitespaces(&mut self) -> TokenKind {
         self.advance_while(is_whitespace);
         TokenKind::Whitespace
@@ -74,7 +99,6 @@ impl<'src> Cursor<'src> {
 
     fn handle_ident(&mut self) -> TokenKind {
         self.advance_while(is_ident_continue);
-
         TokenKind::Ident
     }
 
@@ -123,8 +147,7 @@ impl<'src> Cursor<'src> {
             match self.next_ahead() {
                 // skip `\"` characters
                 '\\' if '"' == self.second_ahead() => {
-                    self.next_ch();
-                    self.next_ch();
+                    self.advance_to(2);
                 }
                 '"' => {
                     self.next_ch();
@@ -155,9 +178,7 @@ impl<'src> Cursor<'src> {
     fn eat_char(&mut self) -> bool {
         // if true, it's just one characte like `'a'`
         if self.next_ahead() != '\\' && self.second_ahead() == '\'' {
-            self.next_ch();
-            self.next_ch();
-
+            self.advance_to(2);
             return true;
         }
 
@@ -168,8 +189,7 @@ impl<'src> Cursor<'src> {
                     return true;
                 }
                 '\\' => {
-                    self.next_ch();
-                    self.next_ch();
+                    self.advance_to(2);
                 }
                 '\n' if self.second_ahead() != '\'' => break,
                 EOF_CHAR => break,
@@ -179,6 +199,10 @@ impl<'src> Cursor<'src> {
             }
         }
         false
+    }
+
+    fn advance_to(&mut self, n: u32) -> Option<char> {
+        self.src.nth(n as usize - 1)
     }
 
     fn next_ch(&mut self) -> Option<char> {

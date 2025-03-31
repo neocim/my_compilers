@@ -40,6 +40,7 @@ pub enum LiteralKind {
     Float,
     Char { terminated: bool },
     Str { terminated: bool },
+    Bool,
 }
 
 impl Token {
