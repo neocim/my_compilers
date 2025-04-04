@@ -1,4 +1,6 @@
 mod fxset;
+#[cfg(test)]
+mod tests;
 
 use std::cell::RefCell;
 
@@ -18,6 +20,10 @@ impl Symbol {
     }
 }
 
+/// Interner for static variable `SYMBOL_REGISTRY`. Here i use `String` instead of
+/// `&'static str` because I'm too lazy to write some kind of arena where these variables
+/// will live the entire program or look for some other way to make these strings with
+/// `'static` lifetime.
 struct SymbolRegistryInterner {
     symbols: FxIndexSet<String>,
 }
@@ -29,12 +35,12 @@ impl SymbolRegistryInterner {
         }
     }
 
-    fn intern(&mut self, str: String) -> Symbol {
-        if let Some(idx) = self.symbols.get_index_of(&str) {
+    fn intern(&mut self, to_intern: String) -> Symbol {
+        if let Some(idx) = self.symbols.get_index_of(&to_intern) {
             return Symbol::new(idx as u16);
         }
 
-        let (idx, _) = self.symbols.insert_full(str);
+        let (idx, _) = self.symbols.insert_full(to_intern);
 
         Symbol::new(idx as u16)
     }

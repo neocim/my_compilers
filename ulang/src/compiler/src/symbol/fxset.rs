@@ -88,12 +88,12 @@ fn write32(mut hash: u32, mut bytes: &[u8]) -> u32 {
     }
 
     if bytes.len() >= 2 {
-        hash = hash.wrapping_add(u32::from_le_bytes(bytes[0..2].try_into().unwrap()));
+        hash = hash.wrapping_add(u16::from_le_bytes(bytes[0..2].try_into().unwrap()) as u32);
         bytes = &bytes[2..];
     }
 
     if let Some(&byte) = bytes.first() {
-        hash = hash.wrapping_add(byte as u32);
+        hash = hash.wrapping_add(u32::from(byte));
     }
 
     hash
@@ -106,17 +106,17 @@ fn write64(mut hash: u64, mut bytes: &[u8]) -> u64 {
     }
 
     if bytes.len() >= 4 {
-        hash = hash.wrapping_add(u64::from_le_bytes(bytes[0..4].try_into().unwrap()));
+        hash = hash.wrapping_add(u32::from_le_bytes(bytes[0..4].try_into().unwrap()) as u64);
         bytes = &bytes[4..];
     }
 
     if bytes.len() >= 2 {
-        hash = hash.wrapping_add(u64::from_le_bytes(bytes[0..2].try_into().unwrap()));
+        hash = hash.wrapping_add(u16::from_le_bytes(bytes[0..2].try_into().unwrap()) as u64);
         bytes = &bytes[2..];
     }
 
     if let Some(&byte) = bytes.first() {
-        hash = hash.wrapping_add(byte as u64);
+        hash = hash.wrapping_add(u64::from(byte));
     }
 
     hash
