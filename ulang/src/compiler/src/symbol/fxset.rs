@@ -7,19 +7,18 @@
 //! This `FxHash` is taken from `rustc`. I could use ready-made solutions, but it
 //! was interesting for me to implement it manually. This is not a cryptographically secure
 //! hash and also based on [`MurmurHash`](https://ru.wikipedia.org/wiki/MurmurHash).
+#![allow(dead_code)]
 
 use std::hash::{BuildHasherDefault, Hasher};
-
-use indexmap::IndexSet;
 
 #[cfg(target_pointer_width = "32")]
 const SEED: usize = 0x9e3779b9;
 #[cfg(target_pointer_width = "64")]
 const SEED: usize = 0x517cc1b727220a95;
 
-pub type FxIndexSet<T> = IndexSet<T, BuildHasherDefault<FxHasher>>;
+pub type FxIndexSet<T> = indexmap::IndexSet<T, BuildHasherDefault<FxHasher>>;
 
-struct FxHasher {
+pub struct FxHasher {
     hash: usize,
 }
 
