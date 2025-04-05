@@ -6,8 +6,10 @@ use std::cell::RefCell;
 
 use fxset::FxIndexSet;
 
+type SymbolRegistry = RefCell<SymbolRegistryInterner>;
+
 thread_local! {
-    static SYMBOL_REGISTRY: RefCell<SymbolRegistryInterner> = RefCell::new(SymbolRegistryInterner::new())
+    static SYMBOL_REGISTRY: SymbolRegistry = RefCell::new(SymbolRegistryInterner::new())
 }
 
 impl Symbol {
@@ -16,11 +18,11 @@ impl Symbol {
     }
 
     pub fn intern(to_intern: String) -> Symbol {
-        SYMBOL_REGISTRY.with_borrow_mut(|sym_reg| sym_reg.intern(to_intern))
+        with_mut_symbol_registry(|symregi| symregi.intern(to_intern))
     }
 }
 
-/// Interner for static variable `SYMBOL_REGISTRY`. Here i use `String` instead of
+/// Interner for all strings that we are meet during compilation. Here i use `String` instead of
 /// `&'static str` because I'm too lazy to write some kind of arena where these variables
 /// will live the entire program or look for some other way to make these strings with
 /// `'static` lifetime.
@@ -44,6 +46,13 @@ impl SymbolRegistryInterner {
 
         Symbol::new(idx as u16)
     }
+}
+
+fn with_mut_symbol_registry<F, R>(func: F) -> R
+where
+    F: FnOnce(&mut SymbolRegistryInterner) -> R,
+{
+    SYMBOL_REGISTRY.with_borrow_mut(func)
 }
 
 /// I use `u16` instead of `u32` because I have a small compiler and I
