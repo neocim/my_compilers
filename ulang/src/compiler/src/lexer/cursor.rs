@@ -63,7 +63,7 @@ impl<'src> Cursor<'src> {
             EOF_CHAR => TokenKind::Eof,
             _ => TokenKind::Unknown,
         };
-        Token::new(kind, self.get_token_len())
+        Token::new(kind, self.get_token_len() as u16)
     }
 
     fn handle_bool(&mut self, first: char) -> TokenKind {

@@ -1,7 +1,7 @@
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Token {
     pub(crate) kind: TokenKind,
-    len: u32,
+    len: u16,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -44,7 +44,7 @@ pub enum LiteralKind {
 }
 
 impl Token {
-    pub fn new(kind: TokenKind, len: u32) -> Self {
+    pub fn new(kind: TokenKind, len: u16) -> Self {
         Token { kind, len }
     }
 }
