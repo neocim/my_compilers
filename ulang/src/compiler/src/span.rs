@@ -6,8 +6,14 @@ pub struct Span {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Pos {
-    line: u16,
+    ln: u16,
     col: u16,
+}
+
+impl Pos {
+    pub fn new(ln: u16, col: u16) -> Self {
+        Self { ln, col }
+    }
 }
 
 impl Span {
