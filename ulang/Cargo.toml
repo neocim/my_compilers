@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["src/compiler"]
+members = ["src/compiler", "src/macros"]
 
 [profile.release]
 opt-level = 3
