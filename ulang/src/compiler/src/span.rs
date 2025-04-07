@@ -21,3 +21,12 @@ impl Span {
         Self { lo, hi }
     }
 }
+
+impl Default for Span {
+    fn default() -> Self {
+        Self {
+            lo: Pos::new(1, 1),
+            hi: Pos::new(1, 1),
+        }
+    }
+}

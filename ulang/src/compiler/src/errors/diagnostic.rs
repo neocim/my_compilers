@@ -36,18 +36,18 @@ pub struct DiagnosticMsg<'s> {
 /// has been implemented, which is located in the `ulang-macros` crate.
 pub trait IntoDiagnostic<'dcx, 'msg> {
     fn into_diag(
-        &self,
+        self,
         diag_ctxt: &'dcx DiagnosticCtxt,
         level: DiagnosticLevel,
     ) -> Diagnostic<'dcx, 'msg>;
 }
 
 pub trait IntoDiagMsg {
-    fn into_diagnostic_msg<'s>(self) -> DiagnosticMsg<'s>;
+    fn into_diag_msg<'s>(self) -> DiagnosticMsg<'s>;
 }
 
 impl IntoDiagMsg for String {
-    fn into_diagnostic_msg<'s>(self) -> DiagnosticMsg<'s> {
+    fn into_diag_msg<'s>(self) -> DiagnosticMsg<'s> {
         DiagnosticMsg { msg: self.into() }
     }
 }
@@ -72,7 +72,7 @@ impl<'dcx, 'msg> Diagnostic<'dcx, 'msg> {
         Self {
             diag_ctxt,
             level,
-            diag_msg: diag_msg.into_diagnostic_msg(),
+            diag_msg: diag_msg.into_diag_msg(),
             span,
         }
     }
