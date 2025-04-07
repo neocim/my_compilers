@@ -76,6 +76,10 @@ impl<'dcx, 'msg> Diagnostic<'dcx, 'msg> {
             span,
         }
     }
+
+    pub fn span(&mut self, span: Span) {
+        self.span = span;
+    }
 }
 
 impl<'dcx, 'msg> DiagnosticCtxt {
