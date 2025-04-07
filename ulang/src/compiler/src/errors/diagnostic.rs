@@ -33,7 +33,7 @@ pub struct DiagnosticMsg<'s> {
 /// A trait that allows you to easily create your own errors and
 /// parse them into diagnostics that are used throughout the compiler.
 /// To make it easier to create these errors, a [`derive-macro`](https://doc.rust-lang.org/reference/procedural-macros.html#derive-macros)
-/// has been implemented, which is located in the `ulang-macros` crate.
+/// has been implemented, which is located in the [`macros`](https://github.com/neocim/my_compilers/tree/master/ulang/src/macros) crate.
 pub trait IntoDiagnostic<'dcx, 'msg> {
     fn into_diag(
         self,
