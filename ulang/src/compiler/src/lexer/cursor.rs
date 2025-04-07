@@ -70,9 +70,7 @@ impl<'src> Cursor<'src> {
         match first {
             'f' => self.bool_or_ident("alse"),
             't' => self.bool_or_ident("rue"),
-            // this is an unreachable variant, because we should only call this method if
-            // we see the characters 'f' or 't', but let this check remain anyway.
-            _ => self.handle_ident(),
+            _ => unreachable!(),
         }
     }
 
