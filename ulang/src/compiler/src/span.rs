@@ -1,7 +1,7 @@
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Span {
-    lo: Pos,
-    hi: Pos,
+    pub lo: Pos,
+    pub hi: Pos,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]

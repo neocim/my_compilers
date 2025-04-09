@@ -8,7 +8,7 @@ use crate::span::{Pos, Span};
 use super::token::{LiteralKind, Token, TokenKind};
 
 const EOF_CHAR: char = '\0';
-const NEW_LINE: char = '\n';
+const NEW_LINE: char = '\u{000A}';
 
 #[derive(Clone)]
 pub struct Cursor<'src> {
@@ -29,8 +29,9 @@ impl<'src> Cursor<'src> {
     pub fn next_token(&mut self) -> Token {
         let ch = match self.next_ch() {
             Some(ch) => ch,
-            None => return Token::new(TokenKind::Eof, self.get_tok_span()),
+            None => return Token::new(TokenKind::Eof, self.get_tok_span(false)),
         };
+        let mut new_line = false;
 
         let kind = match ch {
             '(' => TokenKind::OpenParen,
@@ -64,12 +65,21 @@ impl<'src> Cursor<'src> {
             '"' => self.handle_str(),
             '\'' => self.handle_char(),
             't' | 'f' => self.handle_bool(ch),
+            // FIXME!: we should check that character is new line in the
+            // `Cursor::handle_whitespaces()`, but by for some reason, when
+            // this check is in the function, the cursor does not process newline characters.
+            ch if ch == NEW_LINE => {
+                new_line = true;
+                self.handle_whitespaces()
+            }
             ch if is_whitespace(ch) => self.handle_whitespaces(),
             ch if is_ident_start(ch) => self.handle_ident(),
             EOF_CHAR => TokenKind::Eof,
             _ => TokenKind::Unknown,
         };
-        Token::new(kind, self.get_tok_span())
+        let span = self.get_tok_span(new_line);
+
+        Token::new(kind, span)
     }
 
     fn handle_bool(&mut self, first: char) -> TokenKind {
@@ -98,11 +108,11 @@ impl<'src> Cursor<'src> {
     fn handle_whitespaces(&mut self) -> TokenKind {
         while is_whitespace(self.next_ahead()) && !self.is_eof() {
             let ch = self.next_ch().unwrap();
-
             if ch == NEW_LINE {
                 self.new_line();
             }
         }
+
         TokenKind::Whitespace
     }
 
@@ -239,9 +249,15 @@ impl<'src> Cursor<'src> {
         self.src.as_str().is_empty()
     }
 
-    fn get_tok_span(&mut self) -> Span {
+    fn get_tok_span(&mut self, new_line: bool) -> Span {
         let start = self.pos;
-        self.pos.col = self.pos.col + self.get_tok_len();
+        if new_line {
+            self.new_line();
+            self.pos.col = self.pos.col + self.get_tok_len() - 1;
+        } else {
+            self.pos.col = self.pos.col + self.get_tok_len();
+        }
+
         Span::new(start, self.pos)
     }
 
@@ -256,12 +272,14 @@ impl<'src> Cursor<'src> {
     }
 }
 
+/// # WARNING
+/// Here is doesnt checked `\n`. See `Cursor::next_token()`
 fn is_whitespace(ch: char) -> bool {
     matches!(
         ch,
         // Usual ASCII suspects
         '\u{0009}'   // \t
-        | '\u{000A}' // \n
+        // | '\u{000A}' // \n
         | '\u{000B}' // vertical tab
         | '\u{000C}' // form feed
         | '\u{000D}' // \r
