@@ -1,5 +1,9 @@
-use super::cursor::Cursor;
-use crate::lexer::{token::Token, LiteralKind, TokenKind};
+use crate::lexer::token::LiteralKind;
+
+use super::{
+    cursor::Cursor,
+    token::{Token, TokenKind},
+};
 
 fn token_stream(mut cursor: Cursor) -> impl Iterator<Item = Token> + use<'_> {
     std::iter::from_fn(move || {

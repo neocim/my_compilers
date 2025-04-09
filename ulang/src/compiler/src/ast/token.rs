@@ -8,15 +8,45 @@ pub struct Token {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum TokenKind {
-    Colon,     // `:`
-    SemiColon, // `;`
-    Comma,     // `,`
-    Delimiter(Delimiter),
-    AssignOp(AssignOp),
-    BinOp(BinOp),
-    UnOp(UnOp),
-    Ident(Ident), // Any ident like keywords or name of variables, etc.
     Lit(Literal),
+    Ident(Ident),
+    Comment,      // Only `//`. We dont support many lines comments like `/* Comment */`
+    Whitespace,   // Any whitespace symbol: `\n`, `\t`, ` `, etc.
+    OpenParen,    // `(`
+    CloseParen,   // `)`
+    OpenBrace,    // `{`
+    CloseBrace,   // `}`
+    OpenBracket,  // `[`
+    CloseBracket, // `]`
+    Bang,         // `!`
+    Eq,           // `=`
+    NotEq,        // `!=`
+    EqEq,         // `==`
+    LessThan,     // `<`
+    LtEq,         // `<=`
+    GreaterThan,  // `>`
+    GtEq,         // `>=`
+    Plus,         // `+`
+    PlusPlus,     // `++`
+    Minus,        // `-`
+    MinusMinux,   // `--`
+    Slash,        // `/`
+    Percent,      // `%`
+    Star,         // `*`
+    StarEq,       // `*=`
+    PlusEq,       // `+=`
+    MinusEq,      // `-=`
+    SlashEq,      // `/=`
+    PercentEq,    // `%=`
+    Colon,        // `:`
+    SemiColon,    // `;`
+    Comma,        // `,`
+    And,          // `&`
+    AndAnd,       // `&&`
+    Or,           // `|`
+    OrOr,         // `||`
+    Unknown,      // Any unknown token like `#` or `$`
+    Eof,          // Final character in the file, aka `end of file`, `\0`
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -41,48 +71,8 @@ pub enum LiteralKind {
     Char,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum Delimiter {
-    OBrace,   // `{`
-    CBrace,   // `}`
-    OParen,   // `(`
-    CParen,   // `)`
-    OBracket, // `[`
-    CBracket, // `]`
-}
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum AssignOp {
-    Assign,    // `=`
-    MulAssign, // `*=`
-    ModAssign, // `%=`
-    DivAssign, // `/=`
-    SubAssign, // `-=`
-    AddAssign, // `+=`
-}
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum BinOp {
-    Add,         // `+`
-    Sub,         // `-`
-    Mul,         // `*`
-    Div,         // `/`
-    Mod,         // `%`
-    LessThan,    // `<`
-    LtOrEq,      // `<=`
-    GreaterThan, // `>`
-    GtOrEq,      // `>=`
-    NotEq,       // `!=`
-    Eq,          // `==`
-    Or,          // `||`
-    And,         // `&&`
-}
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum UnOp {
-    Ref,   // `&`
-    Deref, // `*`
-    Not,   // `!`
-    UnAdd, // `++`
-    UnSub, // `--`
+impl Token {
+    pub fn new(kind: TokenKind, span: Span) -> Self {
+        Token { kind, span }
+    }
 }

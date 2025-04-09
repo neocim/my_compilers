@@ -1,7 +1,9 @@
+use crate::span::{Pos, Span};
+
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Token {
     pub(crate) kind: TokenKind,
-    len: u16,
+    pub span: Span,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -44,7 +46,7 @@ pub enum LiteralKind {
 }
 
 impl Token {
-    pub fn new(kind: TokenKind, len: u16) -> Self {
-        Token { kind, len }
+    pub fn new(kind: TokenKind, span: Span) -> Self {
+        Token { kind, span }
     }
 }

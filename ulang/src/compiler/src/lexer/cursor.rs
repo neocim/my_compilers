@@ -3,27 +3,33 @@ use std::str::Chars;
 // https://www.unicode.org/reports/tr31/
 use unicode_xid::UnicodeXID;
 
+use crate::span::{Pos, Span};
+
 use super::token::{LiteralKind, Token, TokenKind};
 
 const EOF_CHAR: char = '\0';
+const NEW_LINE: char = '\n';
 
+#[derive(Clone)]
 pub struct Cursor<'src> {
     src: Chars<'src>,
-    remaining: u32,
+    remaining: u16,
+    pos: Pos,
 }
 
 impl<'src> Cursor<'src> {
     pub fn new(src: &'src str) -> Self {
         Self {
             src: src.chars(),
-            remaining: src.len() as u32,
+            remaining: src.len() as u16,
+            pos: Pos::new(1, 1),
         }
     }
 
     pub fn next_token(&mut self) -> Token {
         let ch = match self.next_ch() {
             Some(ch) => ch,
-            None => return Token::new(TokenKind::Eof, 0),
+            None => return Token::new(TokenKind::Eof, self.get_tok_span()),
         };
 
         let kind = match ch {
@@ -63,7 +69,7 @@ impl<'src> Cursor<'src> {
             EOF_CHAR => TokenKind::Eof,
             _ => TokenKind::Unknown,
         };
-        Token::new(kind, self.get_token_len() as u16)
+        Token::new(kind, self.get_tok_span())
     }
 
     fn handle_bool(&mut self, first: char) -> TokenKind {
@@ -90,7 +96,13 @@ impl<'src> Cursor<'src> {
     }
 
     fn handle_whitespaces(&mut self) -> TokenKind {
-        self.advance_while(is_whitespace);
+        while is_whitespace(self.next_ahead()) && !self.is_eof() {
+            let ch = self.next_ch().unwrap();
+
+            if ch == NEW_LINE {
+                self.new_line();
+            }
+        }
         TokenKind::Whitespace
     }
 
@@ -227,14 +239,20 @@ impl<'src> Cursor<'src> {
         self.src.as_str().is_empty()
     }
 
-    fn get_token_len(&mut self) -> u32 {
-        let res = self.remaining - self.src.as_str().len() as u32;
-        self.reset_pos();
-        res
+    fn get_tok_span(&mut self) -> Span {
+        let start = self.pos;
+        self.pos.col = self.pos.col + self.get_tok_len();
+        Span::new(start, self.pos)
     }
 
-    fn reset_pos(&mut self) {
-        self.remaining = self.src.as_str().len() as u32
+    fn get_tok_len(&mut self) -> u16 {
+        let tok_len = self.remaining - self.src.as_str().len() as u16;
+        self.remaining = self.src.as_str().len() as u16;
+        tok_len
+    }
+
+    fn new_line(&mut self) {
+        self.pos = Pos::new(self.pos.ln + 1, 1);
     }
 }
 

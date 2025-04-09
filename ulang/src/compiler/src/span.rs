@@ -6,8 +6,8 @@ pub struct Span {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Pos {
-    ln: u16,
-    col: u16,
+    pub(crate) ln: u16,
+    pub(crate) col: u16,
 }
 
 impl Pos {
