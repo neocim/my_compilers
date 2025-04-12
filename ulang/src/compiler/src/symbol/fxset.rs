@@ -3,7 +3,7 @@
 //! independent crate, and it shouldn't be in the `symbol`. On the other hand, I don't
 //! use it anywhere else except in the `symbol`, so I left this module here.
 //!
-//! # About
+//! ### About
 //! This `FxHash` is taken from `rustc`. I could use ready-made solutions, but it
 //! was interesting for me to implement it manually. This is not a cryptographically secure
 //! hash and also based on [`MurmurHash`](https://ru.wikipedia.org/wiki/MurmurHash).

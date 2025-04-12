@@ -31,7 +31,7 @@ impl<'src> Lexer<'src> {
     }
 
     fn next_from_cursor(&mut self) -> AstToken {
-        // loop because we want to skip whitespaces
+        // Loop because we want to skip whitespaces
         loop {
             let token = self.cursor.next_token();
 
@@ -70,7 +70,7 @@ impl<'src> Lexer<'src> {
 
     fn literal(&mut self, lit: LexerToken) {
         let LexerToken { kind, span } = lit;
-        // we should only call this if we see literal
+        // We should only call this if we see literal
         let LexerTokenKind::Lit { kind } = kind else {
             unreachable!()
         };
@@ -78,8 +78,8 @@ impl<'src> Lexer<'src> {
         match kind {
             token::LiteralKind::Int => todo!(),
             token::LiteralKind::Float => todo!(),
-            token::LiteralKind::Char { terminated } => todo!(),
-            token::LiteralKind::Str { terminated } => todo!(),
+            token::LiteralKind::Char { .. } => todo!(),
+            token::LiteralKind::Str { .. } => todo!(),
             token::LiteralKind::Bool => todo!(),
         }
     }
@@ -107,9 +107,9 @@ impl<'src> Lexer<'src> {
     }
 
     /// Gets string from source text by its span.
-    /// # PANIC
+    /// ### PANIC
     /// - ONLY if we passed the wrong span, but our `Cursor` ensures that it will be correct.
-    /// - if I made a mistake in the code
+    /// Also it can panic if I made a mistakes in the code.
     fn get_from_src(&self, span: Span) -> String {
         let src = self.src;
         let mut result = String::new();

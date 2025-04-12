@@ -276,7 +276,7 @@ impl<'src> Cursor<'src> {
     }
 }
 
-/// # WARNING
+/// ### WARNING
 /// Here is doesnt checked `\n`. See `Cursor::next_token()`
 fn is_whitespace(ch: char) -> bool {
     matches!(
