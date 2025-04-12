@@ -2,7 +2,7 @@ use crate::{span::Span, symbol::Symbol};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Token {
-    kind: TokenKind,
+    pub(crate) kind: TokenKind,
     span: Span,
 }
 
@@ -45,8 +45,9 @@ pub enum TokenKind {
     AndAnd,       // `&&`
     Or,           // `|`
     OrOr,         // `||`
-    Unknown,      // Any unknown token like `#` or `$`
-    Eof,          // Final character in the file, aka `end of file`, `\0`
+    ZeroToken,
+    Unknown, // Any unknown token like `#` or `$`
+    Eof,     // Final character in the file, aka `end of file`, `\0`
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]

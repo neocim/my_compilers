@@ -26,6 +26,10 @@ impl<'src> Cursor<'src> {
         }
     }
 
+    pub fn pos(&self) -> Pos {
+        self.pos
+    }
+
     pub fn next_token(&mut self) -> Token {
         let ch = match self.next_ch() {
             Some(ch) => ch,
