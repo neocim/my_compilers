@@ -111,7 +111,7 @@ impl<'src> Cursor<'src> {
 
     fn handle_whitespaces(&mut self) -> TokenKind {
         while is_whitespace(self.next_ahead()) && !self.is_eof() {
-            let ch = self.next_ch().unwrap();
+            let ch = self.next_ch().expect("Failed to get the next character");
             if ch == NEW_LINE {
                 self.new_line();
             }

@@ -106,7 +106,12 @@ impl<'src> Lexer<'src> {
         kind
     }
 
-    fn get_from_src(src: &str, span: Span) -> String {
+    /// Gets string from source text by its span.
+    /// # PANIC
+    /// - ONLY if we passed the wrong span, but our `Cursor` ensures that it will be correct.
+    /// - if I made a mistake in the code
+    fn get_from_src(&self, span: Span) -> String {
+        let src = self.src;
         let mut result = String::new();
         // Columns
         let l_col = span.lo.col as usize;
@@ -119,31 +124,45 @@ impl<'src> Lexer<'src> {
         if start_l != end_l {
             for (i, line) in src.lines().enumerate().take(end_l.into()).skip(start_l - 1) {
                 if i == start_l - 1 {
-                    let start_byte = line.char_indices().nth(l_col - 1).unwrap().0;
-                    writeln!(result, "{}", &line[start_byte..]).unwrap();
+                    let start_byte = line
+                        .char_indices()
+                        .nth(l_col - 1)
+                        .expect("Failed to get the start byte of the string")
+                        .0;
+                    writeln!(result, "{}", &line[start_byte..])
+                        .expect("Failed to write line into result string");
                 } else if i == end_l - 1 {
                     let end_byte = line
                         .char_indices()
                         .nth(r_col - 1)
                         .map(|(end, _)| end)
                         .unwrap_or(line.len());
-                    write!(result, "{}", &line[..end_byte]).unwrap();
+                    write!(result, "{}", &line[..end_byte])
+                        .expect("Failed to write line into result string");
                 } else {
-                    writeln!(result, "{}", line).unwrap();
+                    writeln!(result, "{}", line).expect("Failed to write line into result string");
                 }
             }
 
             return result;
         }
         // If we are here, then we only need to take one line, so we take it in such a simple way.
-        let line = src.lines().nth(start_l - 1).unwrap();
-        let start_byte = src.char_indices().nth(l_col - 1).unwrap().0;
+        let line = src
+            .lines()
+            .nth(start_l - 1)
+            .expect("Failed to get line by start line");
+        let start_byte = src
+            .char_indices()
+            .nth(l_col - 1)
+            .expect("Failed to get start byte of the string")
+            .0;
         let end_byte = src
             .char_indices()
             .nth(r_col - 1)
             .map(|(end, _)| end)
             .unwrap_or(line.len());
-        write!(result, "{}", &line[start_byte..end_byte]).unwrap();
+        write!(result, "{}", &line[start_byte..end_byte])
+            .expect("Failed to write line into result string");
 
         result
     }
