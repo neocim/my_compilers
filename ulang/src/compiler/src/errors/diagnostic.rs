@@ -1,9 +1,9 @@
 use std::borrow::Cow;
 
+use super::emmiter::DynEmitter;
 use crate::span::Span;
 
-use super::emmiter::DynEmitter;
-
+#[derive(Debug)]
 pub struct Diagnostic<'dcx, 'msg> {
     diag_ctxt: &'dcx DiagnosticCtxt,
     level: DiagnosticLevel,
@@ -11,6 +11,7 @@ pub struct Diagnostic<'dcx, 'msg> {
     span: Span,
 }
 
+#[derive(Debug)]
 pub struct DiagnosticCtxt {
     emitter: Box<DynEmitter>,
     into_console: bool,
@@ -18,7 +19,7 @@ pub struct DiagnosticCtxt {
     allow_warns: bool,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum DiagnosticLevel {
     Help,
     Warn,

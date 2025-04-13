@@ -97,12 +97,14 @@ impl<'src> Lexer<'src> {
         Ok(AstTokenKind::And)
     }
 
+    /// ### PANIC
+    /// - Only if we passed a `LiteralKind`, which is not an integer or a floating point number.
     fn num_lit(&self, kind: LexerLitKind, span: Span) -> AstTokenKind {
         let sym = Symbol::intern(self.get_from_src(span));
         let kind = match kind {
             LexerLitKind::Int => AstLitKind::Int,
             LexerLitKind::Float => AstLitKind::Float,
-            // We should only call this function if we see number literal
+            // We should only call this function if we see the number literal
             _ => unreachable!(),
         };
         AstTokenKind::Lit(Literal::new(kind, sym, span))

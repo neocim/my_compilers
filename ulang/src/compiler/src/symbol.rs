@@ -6,10 +6,8 @@ use std::cell::RefCell;
 
 use fxset::FxIndexSet;
 
-type SymbolRegistry = RefCell<SymbolRegistryInterner>;
-
 thread_local! {
-    static SYMBOL_REGISTRY: SymbolRegistry = RefCell::new(SymbolRegistryInterner::new())
+    static SYMBOL_REGISTRY: RefCell<SymbolRegistryInterner> = RefCell::new(SymbolRegistryInterner::new())
 }
 
 impl Symbol {
@@ -18,7 +16,14 @@ impl Symbol {
     }
 
     pub fn intern(to_intern: String) -> Symbol {
-        with_mut_symbol_registry(|symregi| symregi.intern(to_intern))
+        with_mut_symbol_registry(|symreg| symreg.intern(to_intern))
+    }
+
+    pub fn get<'a>(idx: u16) -> Option<String> {
+        with_symbol_registry(|symreg| {
+            let s = symreg.get(idx);
+            s.map(|s| s.to_string())
+        })
     }
 }
 
@@ -41,11 +46,21 @@ impl SymbolRegistryInterner {
         if let Some(idx) = self.symbols.get_index_of(&to_intern) {
             return Symbol::new(idx as u16);
         }
-
         let (idx, _) = self.symbols.insert_full(to_intern);
 
         Symbol::new(idx as u16)
     }
+
+    fn get(&self, idx: u16) -> Option<&String> {
+        self.symbols.get_index(idx as usize)
+    }
+}
+
+fn with_symbol_registry<F, R>(func: F) -> R
+where
+    F: FnOnce(&SymbolRegistryInterner) -> R,
+{
+    SYMBOL_REGISTRY.with_borrow(func)
 }
 
 fn with_mut_symbol_registry<F, R>(func: F) -> R
