@@ -83,3 +83,9 @@ impl Literal {
         Literal { kind, sym, span }
     }
 }
+
+impl Ident {
+    pub fn new(sym: Symbol, span: Span) -> Self {
+        Ident { sym, span }
+    }
+}

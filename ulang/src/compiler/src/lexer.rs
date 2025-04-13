@@ -1,27 +1,26 @@
-pub(crate) mod cursor;
+mod cursor;
 mod errors;
 #[cfg(test)]
 mod tests;
-pub(crate) mod token;
+mod token;
 
 use std::fmt::Write as _;
 
 use crate::{
     ast::token::{
-        Literal, LiteralKind as AstLitKind, Token as AstToken, TokenKind as AstTokenKind,
+        Ident, Literal, LiteralKind as AstLitKind, Token as AstToken, TokenKind as AstTokenKind,
     },
     errors::diagnostic::{Diagnostic, DiagnosticCtxt, DiagnosticLevel},
-    span::{Pos, Span},
+    span::Span,
     symbol::Symbol,
 };
 use cursor::Cursor;
-use errors::UnterminatedString;
-use token::{LiteralKind as LexerLitKind, Token as LexerToken, TokenKind as LexerTokenKind};
+use errors::{UnterminatedChar, UnterminatedString};
+use token::{LiteralKind as LexerLitKind, TokenKind as LexerTokenKind};
 
 #[derive(Clone)]
 pub struct Lexer<'src> {
     src: &'src str,
-    pos: Pos,
     token: AstToken,
     dcx: &'src DiagnosticCtxt,
     cursor: Cursor<'src>,
@@ -31,7 +30,6 @@ impl<'src> Lexer<'src> {
     pub fn new(src: &'src str, dcx: &'src DiagnosticCtxt) -> Self {
         Self {
             src,
-            pos: Pos::new(1, 1),
             token: AstToken::new(AstTokenKind::ZeroToken, Default::default()),
             dcx,
             cursor: Cursor::new(src),
@@ -45,49 +43,53 @@ impl<'src> Lexer<'src> {
 
             let kind = match token.kind {
                 LexerTokenKind::Lit { kind } => self.literal(kind, token.span)?,
-                LexerTokenKind::Comment => todo!(),
-                LexerTokenKind::Ident => todo!(),
-                LexerTokenKind::Whitespace => continue,
-                LexerTokenKind::OpenParen => todo!(),
-                LexerTokenKind::CloseParen => todo!(),
-                LexerTokenKind::OpenBrace => todo!(),
-                LexerTokenKind::CloseBrace => todo!(),
-                LexerTokenKind::OpenBracket => todo!(),
-                LexerTokenKind::CloseBracket => todo!(),
-                LexerTokenKind::Bang => todo!(),
-                LexerTokenKind::Eq => todo!(),
-                LexerTokenKind::LessThan => todo!(),
-                LexerTokenKind::GreaterThan => todo!(),
-                LexerTokenKind::Plus => todo!(),
-                LexerTokenKind::Minus => todo!(),
-                LexerTokenKind::Slash => todo!(),
-                LexerTokenKind::Percent => todo!(),
-                LexerTokenKind::Star => todo!(),
-                LexerTokenKind::Colon => todo!(),
-                LexerTokenKind::SemiColon => todo!(),
-                LexerTokenKind::Comma => todo!(),
-                LexerTokenKind::And => todo!(),
-                LexerTokenKind::Or => todo!(),
-                LexerTokenKind::Unknown => todo!(),
+                LexerTokenKind::Ident => self.ident(token.span),
+                LexerTokenKind::Comment => AstTokenKind::Comment,
+                LexerTokenKind::OpenParen => AstTokenKind::OpenParen,
+                LexerTokenKind::CloseParen => AstTokenKind::CloseParen,
+                LexerTokenKind::OpenBrace => AstTokenKind::OpenBrace,
+                LexerTokenKind::CloseBrace => AstTokenKind::CloseBrace,
+                LexerTokenKind::OpenBracket => AstTokenKind::OpenBracket,
+                LexerTokenKind::CloseBracket => AstTokenKind::CloseBracket,
+                LexerTokenKind::Bang => AstTokenKind::Bang,
+                LexerTokenKind::Eq => AstTokenKind::Eq,
+                LexerTokenKind::LessThan => AstTokenKind::LessThan,
+                LexerTokenKind::GreaterThan => AstTokenKind::GreaterThan,
+                LexerTokenKind::Plus => AstTokenKind::Plus,
+                LexerTokenKind::Minus => AstTokenKind::Minus,
+                LexerTokenKind::Slash => AstTokenKind::Slash,
+                LexerTokenKind::Percent => AstTokenKind::Percent,
+                LexerTokenKind::Star => AstTokenKind::Star,
+                LexerTokenKind::Colon => AstTokenKind::Colon,
+                LexerTokenKind::SemiColon => AstTokenKind::SemiColon,
+                LexerTokenKind::Comma => AstTokenKind::Comma,
+                LexerTokenKind::And => AstTokenKind::And,
+                LexerTokenKind::Or => AstTokenKind::Or,
+                LexerTokenKind::Unknown => AstTokenKind::Unknown,
                 LexerTokenKind::Eof => AstTokenKind::Eof,
+                LexerTokenKind::Whitespace => continue,
             };
 
             return Ok(AstToken::new(kind, token.span));
         }
     }
 
-    fn literal(&mut self, kind: LexerLitKind, span: Span) -> Result<AstTokenKind, Diagnostic> {
+    fn ident(&self, span: Span) -> AstTokenKind {
+        let sym = Symbol::intern(self.get_from_src(span));
+        AstTokenKind::Ident(Ident::new(sym, span))
+    }
+
+    fn literal(&self, kind: LexerLitKind, span: Span) -> Result<AstTokenKind, Diagnostic> {
         match kind {
-            LexerLitKind::Int => Ok(self.num_lit(kind, span)),
-            LexerLitKind::Float => Ok(self.num_lit(kind, span)),
+            LexerLitKind::Int | LexerLitKind::Float => Ok(self.num_lit(kind, span)),
+            LexerLitKind::Bool => Ok(self.bool_lit(span)),
             LexerLitKind::Char { terminated } => self.char_lit(terminated, span),
             LexerLitKind::Str { terminated } => self.str_lit(terminated, span),
-            LexerLitKind::Bool => Ok(self.bool_lit(span)),
         }
     }
 
     /// Returns `AstTokenKind' if the literal is terminated, diagnostic otherwise
-    fn str_lit(&mut self, terminated: bool, span: Span) -> Result<AstTokenKind, Diagnostic> {
+    fn str_lit(&self, terminated: bool, span: Span) -> Result<AstTokenKind, Diagnostic> {
         if !terminated {
             return Err(self
                 .dcx
@@ -99,11 +101,11 @@ impl<'src> Lexer<'src> {
     }
 
     /// Returns `AstTokenKind' if the literal is terminated, diagnostic otherwise
-    fn char_lit(&mut self, terminated: bool, span: Span) -> Result<AstTokenKind, Diagnostic> {
+    fn char_lit(&self, terminated: bool, span: Span) -> Result<AstTokenKind, Diagnostic> {
         if !terminated {
             return Err(self
                 .dcx
-                .emit_err(UnterminatedString {}, DiagnosticLevel::Error, span));
+                .emit_err(UnterminatedChar {}, DiagnosticLevel::Error, span));
         }
         let sym = Symbol::intern(self.get_from_src(span));
 
