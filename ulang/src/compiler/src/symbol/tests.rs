@@ -1,6 +1,5 @@
-use crate::symbol::Symbol;
-
 use super::SymbolRegistryInterner;
+use crate::symbol::Symbol;
 
 #[test]
 fn test_symbol_registry_interner() {

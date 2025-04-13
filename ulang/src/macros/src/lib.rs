@@ -1,6 +1,6 @@
-use proc_macro::TokenStream;
-
 mod into_diag;
+
+use proc_macro::TokenStream;
 
 use into_diag::into_diag_derive;
 

@@ -1,11 +1,10 @@
-use crate::{
-    lexer::token::LiteralKind,
-    span::{Pos, Span},
-};
-
 use super::{
     cursor::Cursor,
     token::{Token, TokenKind},
+};
+use crate::{
+    lexer::token::LiteralKind,
+    span::{Pos, Span},
 };
 
 fn token_stream(mut cursor: Cursor) -> impl Iterator<Item = Token> + use<'_> {

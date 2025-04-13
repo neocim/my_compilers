@@ -3,9 +3,8 @@ use std::str::Chars;
 // https://www.unicode.org/reports/tr31/
 use unicode_xid::UnicodeXID;
 
-use crate::span::{Pos, Span};
-
 use super::token::{LiteralKind, Token, TokenKind};
+use crate::span::{Pos, Span};
 
 const EOF_CHAR: char = '\0';
 const NEW_LINE: char = '\u{000A}';

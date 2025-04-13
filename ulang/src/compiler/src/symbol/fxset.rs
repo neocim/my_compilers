@@ -1,4 +1,4 @@
-//! ## FIXME!
+//! ### FIXME!
 //! I dont know where to put this module. On the one hand, it's probably an
 //! independent crate, and it shouldn't be in the `symbol`. On the other hand, I don't
 //! use it anywhere else except in the `symbol`, so I left this module here.
@@ -8,7 +8,6 @@
 //! was interesting for me to implement it manually. This is not a cryptographically secure
 //! hash and also based on [`MurmurHash`](https://ru.wikipedia.org/wiki/MurmurHash).
 #![allow(dead_code)]
-
 use std::hash::{BuildHasherDefault, Hasher};
 
 #[cfg(target_pointer_width = "32")]
