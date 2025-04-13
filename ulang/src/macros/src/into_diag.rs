@@ -2,7 +2,8 @@ use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::quote;
 use syn::{
-    Attribute, Data, DataStruct, DeriveInput, Error, Fields, FieldsNamed, LitStr, parse_macro_input,
+    Attribute, Data, DataStruct, DeriveInput, Error, Fields, FieldsNamed, Ident, LitStr,
+    parse_macro_input,
 };
 
 pub fn into_diag_derive(input: TokenStream) -> TokenStream {
@@ -14,19 +15,27 @@ fn implement(input: DeriveInput) -> TokenStream {
     let imports = quote! {
         use crate::{
             errors::diagnostic::{Diagnostic, DiagnosticCtxt, DiagnosticLevel, IntoDiagnostic},
-            span::Span,
         };
+        use super::#name;
     };
     let body = get_body(&input);
+    let mod_name = Ident::new(
+        format!("__impl_IntoDiagnostic_{}", name).as_str(),
+        name.span(),
+    );
     let implementation = quote! {
-        #imports
-        impl<'a, 'b> IntoDiagnostic<'a, 'b> for #name {
-            fn into_diag(
-                self,
-                diag_ctxt: &'a DiagnosticCtxt,
-                level: DiagnosticLevel,
-            ) -> Diagnostic<'a, 'b> {
-                #body
+        #[doc(hidden)]
+        #[allow(non_snake_case)]
+        mod #mod_name {
+            #imports
+            impl<'a, 'b> IntoDiagnostic<'a, 'b> for #name {
+                fn into_diag(
+                    self,
+                    diag_ctxt: &'a DiagnosticCtxt,
+                    level: DiagnosticLevel,
+                ) -> Diagnostic<'a, 'b> {
+                    #body
+                }
             }
         }
     };

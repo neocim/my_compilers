@@ -38,13 +38,13 @@ impl<'src> Lexer<'src> {
         }
     }
 
-    fn next_from_cursor(&mut self) -> AstToken {
+    fn next_from_cursor(&mut self) -> Result<AstToken, Diagnostic> {
         // Loop because we want to skip whitespaces
         loop {
             let token = self.cursor.next_token();
 
             let kind = match token.kind {
-                LexerTokenKind::Lit { kind } => self.literal(kind, token.span),
+                LexerTokenKind::Lit { kind } => self.literal(kind, token.span)?,
                 LexerTokenKind::Comment => todo!(),
                 LexerTokenKind::Ident => todo!(),
                 LexerTokenKind::Whitespace => continue,
@@ -72,29 +72,47 @@ impl<'src> Lexer<'src> {
                 LexerTokenKind::Eof => AstTokenKind::Eof,
             };
 
-            return AstToken::new(kind, token.span);
+            return Ok(AstToken::new(kind, token.span));
         }
     }
 
-    fn literal(&self, kind: LexerLitKind, span: Span) -> AstTokenKind {
+    fn literal(&mut self, kind: LexerLitKind, span: Span) -> Result<AstTokenKind, Diagnostic> {
         match kind {
-            LexerLitKind::Int => self.num_lit(kind, span),
-            LexerLitKind::Float => self.num_lit(kind, span),
-            LexerLitKind::Char { terminated } => todo!(),
-            LexerLitKind::Str { terminated } => todo!(),
-            LexerLitKind::Bool => todo!(),
+            LexerLitKind::Int => Ok(self.num_lit(kind, span)),
+            LexerLitKind::Float => Ok(self.num_lit(kind, span)),
+            LexerLitKind::Char { terminated } => self.char_lit(terminated, span),
+            LexerLitKind::Str { terminated } => self.str_lit(terminated, span),
+            LexerLitKind::Bool => Ok(self.bool_lit(span)),
         }
     }
 
-    /// Returns `AstTokenKind' if the literal is terminated, diagnostics otherwise
+    /// Returns `AstTokenKind' if the literal is terminated, diagnostic otherwise
     fn str_lit(&mut self, terminated: bool, span: Span) -> Result<AstTokenKind, Diagnostic> {
         if !terminated {
             return Err(self
                 .dcx
                 .emit_err(UnterminatedString {}, DiagnosticLevel::Error, span));
         }
+        let sym = Symbol::intern(self.get_from_src(span));
 
-        Ok(AstTokenKind::And)
+        Ok(AstTokenKind::Lit(Literal::new(AstLitKind::Str, sym, span)))
+    }
+
+    /// Returns `AstTokenKind' if the literal is terminated, diagnostic otherwise
+    fn char_lit(&mut self, terminated: bool, span: Span) -> Result<AstTokenKind, Diagnostic> {
+        if !terminated {
+            return Err(self
+                .dcx
+                .emit_err(UnterminatedString {}, DiagnosticLevel::Error, span));
+        }
+        let sym = Symbol::intern(self.get_from_src(span));
+
+        Ok(AstTokenKind::Lit(Literal::new(AstLitKind::Str, sym, span)))
+    }
+
+    fn bool_lit(&self, span: Span) -> AstTokenKind {
+        let sym = Symbol::intern(self.get_from_src(span));
+        AstTokenKind::Lit(Literal::new(AstLitKind::Bool, sym, span))
     }
 
     /// ### PANIC
@@ -111,19 +129,19 @@ impl<'src> Lexer<'src> {
     }
 
     fn glue(&mut self, left_tok: AstTokenKind) -> AstTokenKind {
-        let (kind, need_advance) = match (left_tok, self.next_ahead().kind) {
+        let (kind, need_advance) = match (left_tok, self.next_ahead()) {
             // `!=`
-            (AstTokenKind::Bang, AstTokenKind::Eq) => (AstTokenKind::NotEq, true),
+            (AstTokenKind::Bang, LexerTokenKind::Eq) => (AstTokenKind::NotEq, true),
             // `==`
-            (AstTokenKind::Eq, AstTokenKind::Eq) => (AstTokenKind::EqEq, true),
+            (AstTokenKind::Eq, LexerTokenKind::Eq) => (AstTokenKind::EqEq, true),
             // `<=`
-            (AstTokenKind::LessThan, AstTokenKind::Eq) => (AstTokenKind::LtEq, true),
+            (AstTokenKind::LessThan, LexerTokenKind::Eq) => (AstTokenKind::LtEq, true),
             // `>=`
-            (AstTokenKind::GreaterThan, AstTokenKind::Eq) => (AstTokenKind::GtEq, true),
+            (AstTokenKind::GreaterThan, LexerTokenKind::Eq) => (AstTokenKind::GtEq, true),
             // `||`
-            (AstTokenKind::Or, AstTokenKind::Or) => (AstTokenKind::OrOr, true),
+            (AstTokenKind::Or, LexerTokenKind::Or) => (AstTokenKind::OrOr, true),
             // `&&`
-            (AstTokenKind::And, AstTokenKind::And) => (AstTokenKind::AndAnd, true),
+            (AstTokenKind::And, LexerTokenKind::And) => (AstTokenKind::AndAnd, true),
             (_, _) => (left_tok, false),
         };
         if need_advance {
@@ -193,7 +211,7 @@ impl<'src> Lexer<'src> {
         result
     }
 
-    fn next_ahead(&mut self) -> AstToken {
-        self.clone().next_from_cursor()
+    fn next_ahead(&mut self) -> LexerTokenKind {
+        self.cursor.clone().next_token().kind
     }
 }
