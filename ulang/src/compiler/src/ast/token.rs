@@ -77,3 +77,9 @@ impl Token {
         Token { kind, span }
     }
 }
+
+impl Literal {
+    pub fn new(kind: LiteralKind, sym: Symbol, span: Span) -> Self {
+        Literal { kind, sym, span }
+    }
+}

@@ -1,4 +1,5 @@
 pub(crate) mod cursor;
+mod errors;
 #[cfg(test)]
 mod tests;
 pub(crate) mod token;
@@ -6,26 +7,33 @@ pub(crate) mod token;
 use std::fmt::Write as _;
 
 use crate::{
-    ast::token::{Literal, Token as AstToken, TokenKind as AstTokenKind},
+    ast::token::{
+        Literal, LiteralKind as AstLitKind, Token as AstToken, TokenKind as AstTokenKind,
+    },
+    errors::diagnostic::{Diagnostic, DiagnosticCtxt, DiagnosticLevel},
     span::{Pos, Span},
+    symbol::Symbol,
 };
 use cursor::Cursor;
-use token::{Token as LexerToken, TokenKind as LexerTokenKind};
+use errors::UnterminatedString;
+use token::{LiteralKind as LexerLitKind, Token as LexerToken, TokenKind as LexerTokenKind};
 
 #[derive(Clone)]
 pub struct Lexer<'src> {
     src: &'src str,
     pos: Pos,
     token: AstToken,
+    dcx: &'src DiagnosticCtxt,
     cursor: Cursor<'src>,
 }
 
 impl<'src> Lexer<'src> {
-    pub fn new(src: &'src str) -> Self {
+    pub fn new(src: &'src str, dcx: &'src DiagnosticCtxt) -> Self {
         Self {
             src,
             pos: Pos::new(1, 1),
             token: AstToken::new(AstTokenKind::ZeroToken, Default::default()),
+            dcx,
             cursor: Cursor::new(src),
         }
     }
@@ -36,7 +44,7 @@ impl<'src> Lexer<'src> {
             let token = self.cursor.next_token();
 
             let kind = match token.kind {
-                LexerTokenKind::Lit { kind } => AstTokenKind::Lit(Literal),
+                LexerTokenKind::Lit { kind } => self.literal(kind, token.span),
                 LexerTokenKind::Comment => todo!(),
                 LexerTokenKind::Ident => todo!(),
                 LexerTokenKind::Whitespace => continue,
@@ -68,20 +76,36 @@ impl<'src> Lexer<'src> {
         }
     }
 
-    fn literal(&mut self, lit: LexerToken) {
-        let LexerToken { kind, span } = lit;
-        // We should only call this if we see literal
-        let LexerTokenKind::Lit { kind } = kind else {
-            unreachable!()
-        };
-
+    fn literal(&self, kind: LexerLitKind, span: Span) -> AstTokenKind {
         match kind {
-            token::LiteralKind::Int => todo!(),
-            token::LiteralKind::Float => todo!(),
-            token::LiteralKind::Char { .. } => todo!(),
-            token::LiteralKind::Str { .. } => todo!(),
-            token::LiteralKind::Bool => todo!(),
+            LexerLitKind::Int => self.num_lit(kind, span),
+            LexerLitKind::Float => self.num_lit(kind, span),
+            LexerLitKind::Char { terminated } => todo!(),
+            LexerLitKind::Str { terminated } => todo!(),
+            LexerLitKind::Bool => todo!(),
         }
+    }
+
+    /// Returns `AstTokenKind' if the literal is terminated, diagnostics otherwise
+    fn str_lit(&mut self, terminated: bool, span: Span) -> Result<AstTokenKind, Diagnostic> {
+        if !terminated {
+            return Err(self
+                .dcx
+                .emit_err(UnterminatedString {}, DiagnosticLevel::Error, span));
+        }
+
+        Ok(AstTokenKind::And)
+    }
+
+    fn num_lit(&self, kind: LexerLitKind, span: Span) -> AstTokenKind {
+        let sym = Symbol::intern(self.get_from_src(span));
+        let kind = match kind {
+            LexerLitKind::Int => AstLitKind::Int,
+            LexerLitKind::Float => AstLitKind::Float,
+            // We should only call this function if we see number literal
+            _ => unreachable!(),
+        };
+        AstTokenKind::Lit(Literal::new(kind, sym, span))
     }
 
     fn glue(&mut self, left_tok: AstTokenKind) -> AstTokenKind {
@@ -109,7 +133,7 @@ impl<'src> Lexer<'src> {
     /// Gets string from source text by its span.
     /// ### PANIC
     /// - ONLY if we passed the wrong span, but our `Cursor` ensures that it will be correct.
-    /// Also it can panic if I made a mistakes in the code.
+    /// - Also it can panic if I made a mistakes in the code.
     fn get_from_src(&self, span: Span) -> String {
         let src = self.src;
         let mut result = String::new();

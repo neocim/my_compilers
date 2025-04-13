@@ -77,8 +77,9 @@ impl<'dcx, 'msg> Diagnostic<'dcx, 'msg> {
         }
     }
 
-    pub fn span(&mut self, span: Span) {
+    pub fn with_span(mut self, span: Span) -> Diagnostic<'dcx, 'msg> {
         self.span = span;
+        self
     }
 }
 
@@ -101,8 +102,9 @@ impl<'dcx, 'msg> DiagnosticCtxt {
         &'dcx self,
         err: impl IntoDiagnostic<'dcx, 'msg>,
         level: DiagnosticLevel,
+        span: Span,
     ) -> Diagnostic<'dcx, 'msg> {
-        let err = self.struct_err(err, level);
+        let err = self.struct_err(err, level).with_span(span);
         self.emit(&err);
         err
     }
