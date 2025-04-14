@@ -8,7 +8,8 @@ use std::fmt::Write as _;
 
 use crate::{
     ast::token::{
-        Ident, Literal, LiteralKind as AstLitKind, Token as AstToken, TokenKind as AstTokenKind,
+        Delim, Ident, Literal, LiteralKind as AstLitKind, Token as AstToken,
+        TokenKind as AstTokenKind, TokenStream,
     },
     errors::diagnostic::{Diagnostic, DiagnosticCtxt, DiagnosticLevel},
     span::Span,
@@ -45,12 +46,12 @@ impl<'src> Lexer<'src> {
                 LexerTokenKind::Lit { kind } => self.literal(kind, token.span)?,
                 LexerTokenKind::Ident => self.ident(token.span),
                 LexerTokenKind::Comment => AstTokenKind::Comment,
-                LexerTokenKind::OpenParen => AstTokenKind::OpenParen,
-                LexerTokenKind::CloseParen => AstTokenKind::CloseParen,
-                LexerTokenKind::OpenBrace => AstTokenKind::OpenBrace,
-                LexerTokenKind::CloseBrace => AstTokenKind::CloseBrace,
-                LexerTokenKind::OpenBracket => AstTokenKind::OpenBracket,
-                LexerTokenKind::CloseBracket => AstTokenKind::CloseBracket,
+                LexerTokenKind::OpenParen => AstTokenKind::OpenDelim(Delim::Paren),
+                LexerTokenKind::CloseParen => AstTokenKind::CloseDelim(Delim::Paren),
+                LexerTokenKind::OpenBrace => AstTokenKind::OpenDelim(Delim::Brace),
+                LexerTokenKind::CloseBrace => AstTokenKind::CloseDelim(Delim::Brace),
+                LexerTokenKind::OpenBracket => AstTokenKind::OpenDelim(Delim::Bracket),
+                LexerTokenKind::CloseBracket => AstTokenKind::CloseDelim(Delim::Paren),
                 LexerTokenKind::Bang => AstTokenKind::Bang,
                 LexerTokenKind::Eq => AstTokenKind::Eq,
                 LexerTokenKind::LessThan => AstTokenKind::LessThan,
