@@ -20,6 +20,16 @@ impl Span {
     pub fn new(lo: Pos, hi: Pos) -> Self {
         Self { lo, hi }
     }
+
+    pub fn increment_hi_col(&self) -> Span {
+        Span::new(self.lo, Pos::new(self.hi.ln, self.hi.col + 1))
+    }
+}
+
+impl Default for Pos {
+    fn default() -> Self {
+        Self { ln: 1, col: 1 }
+    }
 }
 
 impl Default for Span {

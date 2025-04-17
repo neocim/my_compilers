@@ -3,7 +3,9 @@ mod fxset;
 mod tests;
 
 use std::cell::RefCell;
+use std::fmt::Write as _;
 
+use crate::span::Span;
 use fxset::FxIndexSet;
 
 thread_local! {
@@ -68,6 +70,66 @@ where
     F: FnOnce(&mut SymbolRegistryInterner) -> R,
 {
     SYMBOL_REGISTRY.with_borrow_mut(func)
+}
+
+/// Gets string from source text by its span.
+/// ### PANIC
+/// - ONLY if we passed the wrong span, but our `Cursor` ensures that it will be correct.
+/// - Also it can panic if I made a mistakes in the code.
+pub fn get_from_src(src: &str, span: Span) -> String {
+    let mut result = String::new();
+    // Columns
+    let l_col = span.lo.col as usize;
+    let r_col = span.hi.col as usize;
+    // Lines
+    let start_l = span.lo.ln as usize;
+    let end_l = span.hi.ln as usize;
+
+    // If we need to take several lines, then we will iterate over them.
+    if start_l != end_l {
+        for (i, line) in src.lines().enumerate().take(end_l.into()).skip(start_l - 1) {
+            if i == start_l - 1 {
+                let start_byte = line
+                    .char_indices()
+                    .nth(l_col - 1)
+                    .expect("Failed to get the start byte of the string")
+                    .0;
+                writeln!(result, "{}", &line[start_byte..])
+                    .expect("Failed to write line into result string");
+            } else if i == end_l - 1 {
+                let end_byte = line
+                    .char_indices()
+                    .nth(r_col - 1)
+                    .map(|(end, _)| end)
+                    .unwrap_or(line.len());
+                write!(result, "{}", &line[..end_byte])
+                    .expect("Failed to write line into result string");
+            } else {
+                writeln!(result, "{}", line).expect("Failed to write line into result string");
+            }
+        }
+
+        return result;
+    }
+    // If we are here, then we only need to take one line, so we take it in such a simple way.
+    let line = src
+        .lines()
+        .nth(start_l - 1)
+        .expect("Failed to get line by start line");
+    let start_byte = src
+        .char_indices()
+        .nth(l_col - 1)
+        .expect("Failed to get start byte of the string")
+        .0;
+    let end_byte = src
+        .char_indices()
+        .nth(r_col - 1)
+        .map(|(end, _)| end)
+        .unwrap_or(line.len());
+    write!(result, "{}", &line[start_byte..end_byte])
+        .expect("Failed to write line into result string");
+
+    result
 }
 
 /// I use `u16` instead of `u32` because I have a small compiler and I

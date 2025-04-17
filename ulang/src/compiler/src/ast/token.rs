@@ -6,7 +6,7 @@ pub struct TokenStream(Vec<Token>);
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Token {
     pub(crate) kind: TokenKind,
-    span: Span,
+    pub(crate) span: Span,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -47,6 +47,7 @@ pub enum TokenKind {
     Unknown,           // Any unknown token like `#` or `$`
     Eof,               // Final character in the file, aka `end of file`, `\0`
     ZeroToken,
+    Error(Span),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -81,6 +82,25 @@ pub enum Delim {
 impl Token {
     pub fn new(kind: TokenKind, span: Span) -> Self {
         Token { kind, span }
+    }
+
+    /// Returns `Some(TokenKind)` if the token was glue, `None` otherwise.
+    pub fn glue(&self, left_tok: TokenKind) -> Option<TokenKind> {
+        match (self.kind, left_tok) {
+            // `!=`
+            (TokenKind::Bang, TokenKind::Eq) => Some(TokenKind::NotEq),
+            // `==`
+            (TokenKind::Eq, TokenKind::Eq) => Some(TokenKind::EqEq),
+            // `<=`
+            (TokenKind::LessThan, TokenKind::Eq) => Some(TokenKind::LtEq),
+            // `>=`
+            (TokenKind::GreaterThan, TokenKind::Eq) => Some(TokenKind::GtEq),
+            // `||`
+            (TokenKind::Or, TokenKind::Or) => Some(TokenKind::OrOr),
+            // `&&`
+            (TokenKind::And, TokenKind::And) => Some(TokenKind::AndAnd),
+            (_, _) => None,
+        }
     }
 }
 

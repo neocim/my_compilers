@@ -12,17 +12,17 @@ use crate::{
         TokenKind as AstTokenKind, TokenStream,
     },
     errors::diagnostic::{Diagnostic, DiagnosticCtxt, DiagnosticLevel},
-    span::Span,
-    symbol::Symbol,
+    span::{Pos, Span},
+    symbol::{get_from_src, Symbol},
 };
 use cursor::Cursor;
 use errors::{UnterminatedChar, UnterminatedString};
-use token::{LiteralKind as LexerLitKind, TokenKind as LexerTokenKind};
+use token::{LiteralKind as LexerLitKind, Token as LexerToken, TokenKind as LexerTokenKind};
 
 #[derive(Clone)]
 pub struct Lexer<'src> {
     src: &'src str,
-    token: AstToken,
+    cur_tok: AstToken,
     dcx: &'src DiagnosticCtxt,
     cursor: Cursor<'src>,
 }
@@ -31,19 +31,34 @@ impl<'src> Lexer<'src> {
     pub fn new(src: &'src str, dcx: &'src DiagnosticCtxt) -> Self {
         Self {
             src,
-            token: AstToken::new(AstTokenKind::ZeroToken, Default::default()),
+            cur_tok: AstToken::new(AstTokenKind::ZeroToken, Span::default()),
             dcx,
             cursor: Cursor::new(src),
         }
     }
 
-    fn next_from_cursor(&mut self) -> Result<AstToken, Diagnostic> {
+    fn advance(&mut self) -> AstToken {
+        let token = self.next_from_cursor();
+
+        if let Some(glued) = token.glue(token.kind) {
+            // Eat the token that we are glued
+            self.next_from_cursor();
+
+            let token = AstToken::new(glued, token.span.increment_hi_col());
+            self.cur_tok = token;
+            return token;
+        }
+
+        token
+    }
+
+    fn next_from_cursor(&mut self) -> AstToken {
         // Loop because we want to skip whitespaces
         loop {
             let token = self.cursor.next_token();
 
             let kind = match token.kind {
-                LexerTokenKind::Lit { kind } => self.literal(kind, token.span)?,
+                LexerTokenKind::Lit { kind } => self.literal(kind, token.span),
                 LexerTokenKind::Ident => self.ident(token.span),
                 LexerTokenKind::Comment => AstTokenKind::Comment,
                 LexerTokenKind::OpenParen => AstTokenKind::OpenDelim(Delim::Paren),
@@ -71,57 +86,57 @@ impl<'src> Lexer<'src> {
                 LexerTokenKind::Whitespace => continue,
             };
 
-            return Ok(AstToken::new(kind, token.span));
+            return AstToken::new(kind, token.span);
         }
     }
 
     fn ident(&self, span: Span) -> AstTokenKind {
-        let sym = Symbol::intern(self.get_from_src(span));
+        let sym = Symbol::intern(get_from_src(self.src, span));
         AstTokenKind::Ident(Ident::new(sym, span))
     }
 
-    fn literal(&self, kind: LexerLitKind, span: Span) -> Result<AstTokenKind, Diagnostic> {
+    fn literal(&self, kind: LexerLitKind, span: Span) -> AstTokenKind {
         match kind {
-            LexerLitKind::Int | LexerLitKind::Float => Ok(self.num_lit(kind, span)),
-            LexerLitKind::Bool => Ok(self.bool_lit(span)),
+            LexerLitKind::Int | LexerLitKind::Float => self.num_lit(kind, span),
+            LexerLitKind::Bool => self.bool_lit(span),
             LexerLitKind::Char { terminated } => self.char_lit(terminated, span),
             LexerLitKind::Str { terminated } => self.str_lit(terminated, span),
         }
     }
 
-    /// Returns `AstTokenKind' if the literal is terminated, diagnostic otherwise
-    fn str_lit(&self, terminated: bool, span: Span) -> Result<AstTokenKind, Diagnostic> {
+    /// Returns `AstTokenKind` if the literal is terminated, diagnostic otherwise
+    fn str_lit(&self, terminated: bool, span: Span) -> AstTokenKind {
         if !terminated {
-            return Err(self
-                .dcx
-                .emit_err(UnterminatedString {}, DiagnosticLevel::Error, span));
+            self.dcx
+                .emit_err(UnterminatedString {}, DiagnosticLevel::Error, span);
+            return AstTokenKind::Error(span);
         }
-        let sym = Symbol::intern(self.get_from_src(span));
+        let sym = Symbol::intern(get_from_src(self.src, span));
 
-        Ok(AstTokenKind::Lit(Literal::new(AstLitKind::Str, sym, span)))
+        AstTokenKind::Lit(Literal::new(AstLitKind::Str, sym, span))
     }
 
-    /// Returns `AstTokenKind' if the literal is terminated, diagnostic otherwise
-    fn char_lit(&self, terminated: bool, span: Span) -> Result<AstTokenKind, Diagnostic> {
+    /// Returns `AstTokenKind` if the literal is terminated, diagnostic otherwise
+    fn char_lit(&self, terminated: bool, span: Span) -> AstTokenKind {
         if !terminated {
-            return Err(self
-                .dcx
-                .emit_err(UnterminatedChar {}, DiagnosticLevel::Error, span));
+            self.dcx
+                .emit_err(UnterminatedChar {}, DiagnosticLevel::Error, span);
+            return AstTokenKind::Error(span);
         }
-        let sym = Symbol::intern(self.get_from_src(span));
+        let sym = Symbol::intern(get_from_src(self.src, span));
 
-        Ok(AstTokenKind::Lit(Literal::new(AstLitKind::Str, sym, span)))
+        AstTokenKind::Lit(Literal::new(AstLitKind::Char, sym, span))
     }
 
     fn bool_lit(&self, span: Span) -> AstTokenKind {
-        let sym = Symbol::intern(self.get_from_src(span));
+        let sym = Symbol::intern(get_from_src(self.src, span));
         AstTokenKind::Lit(Literal::new(AstLitKind::Bool, sym, span))
     }
 
     /// ### PANIC
     /// - Only if we passed a `LiteralKind`, which is not an integer or a floating point number.
     fn num_lit(&self, kind: LexerLitKind, span: Span) -> AstTokenKind {
-        let sym = Symbol::intern(self.get_from_src(span));
+        let sym = Symbol::intern(get_from_src(self.src, span));
         let kind = match kind {
             LexerLitKind::Int => AstLitKind::Int,
             LexerLitKind::Float => AstLitKind::Float,
@@ -131,90 +146,25 @@ impl<'src> Lexer<'src> {
         AstTokenKind::Lit(Literal::new(kind, sym, span))
     }
 
-    fn glue(&mut self, left_tok: AstTokenKind) -> AstTokenKind {
-        let (kind, need_advance) = match (left_tok, self.next_ahead()) {
+    fn glue(&self, left_tok: AstTokenKind) -> Option<AstTokenKind> {
+        match (left_tok, self.next_ahead().kind) {
             // `!=`
-            (AstTokenKind::Bang, LexerTokenKind::Eq) => (AstTokenKind::NotEq, true),
+            (AstTokenKind::Bang, LexerTokenKind::Eq) => Some(AstTokenKind::NotEq),
             // `==`
-            (AstTokenKind::Eq, LexerTokenKind::Eq) => (AstTokenKind::EqEq, true),
+            (AstTokenKind::Eq, LexerTokenKind::Eq) => Some(AstTokenKind::EqEq),
             // `<=`
-            (AstTokenKind::LessThan, LexerTokenKind::Eq) => (AstTokenKind::LtEq, true),
+            (AstTokenKind::LessThan, LexerTokenKind::Eq) => Some(AstTokenKind::LtEq),
             // `>=`
-            (AstTokenKind::GreaterThan, LexerTokenKind::Eq) => (AstTokenKind::GtEq, true),
+            (AstTokenKind::GreaterThan, LexerTokenKind::Eq) => Some(AstTokenKind::GtEq),
             // `||`
-            (AstTokenKind::Or, LexerTokenKind::Or) => (AstTokenKind::OrOr, true),
+            (AstTokenKind::Or, LexerTokenKind::Or) => Some(AstTokenKind::OrOr),
             // `&&`
-            (AstTokenKind::And, LexerTokenKind::And) => (AstTokenKind::AndAnd, true),
-            (_, _) => (left_tok, false),
-        };
-        if need_advance {
-            self.cursor.next_token();
+            (AstTokenKind::And, LexerTokenKind::And) => Some(AstTokenKind::AndAnd),
+            (_, _) => None,
         }
-        kind
     }
 
-    /// Gets string from source text by its span.
-    /// ### PANIC
-    /// - ONLY if we passed the wrong span, but our `Cursor` ensures that it will be correct.
-    /// - Also it can panic if I made a mistakes in the code.
-    fn get_from_src(&self, span: Span) -> String {
-        let src = self.src;
-        let mut result = String::new();
-        // Columns
-        let l_col = span.lo.col as usize;
-        let r_col = span.hi.col as usize;
-        // Lines
-        let start_l = span.lo.ln as usize;
-        let end_l = span.hi.ln as usize;
-
-        // If we need to take several lines, then we will iterate over them.
-        if start_l != end_l {
-            for (i, line) in src.lines().enumerate().take(end_l.into()).skip(start_l - 1) {
-                if i == start_l - 1 {
-                    let start_byte = line
-                        .char_indices()
-                        .nth(l_col - 1)
-                        .expect("Failed to get the start byte of the string")
-                        .0;
-                    writeln!(result, "{}", &line[start_byte..])
-                        .expect("Failed to write line into result string");
-                } else if i == end_l - 1 {
-                    let end_byte = line
-                        .char_indices()
-                        .nth(r_col - 1)
-                        .map(|(end, _)| end)
-                        .unwrap_or(line.len());
-                    write!(result, "{}", &line[..end_byte])
-                        .expect("Failed to write line into result string");
-                } else {
-                    writeln!(result, "{}", line).expect("Failed to write line into result string");
-                }
-            }
-
-            return result;
-        }
-        // If we are here, then we only need to take one line, so we take it in such a simple way.
-        let line = src
-            .lines()
-            .nth(start_l - 1)
-            .expect("Failed to get line by start line");
-        let start_byte = src
-            .char_indices()
-            .nth(l_col - 1)
-            .expect("Failed to get start byte of the string")
-            .0;
-        let end_byte = src
-            .char_indices()
-            .nth(r_col - 1)
-            .map(|(end, _)| end)
-            .unwrap_or(line.len());
-        write!(result, "{}", &line[start_byte..end_byte])
-            .expect("Failed to write line into result string");
-
-        result
-    }
-
-    fn next_ahead(&mut self) -> LexerTokenKind {
-        self.cursor.clone().next_token().kind
+    fn next_ahead(&self) -> LexerToken {
+        self.cursor.clone().next_token()
     }
 }
