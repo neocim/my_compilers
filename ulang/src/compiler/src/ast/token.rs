@@ -1,7 +1,35 @@
-use crate::{span::Span, symbol::Symbol};
+use super::{Delim, Ident, Literal};
+use crate::span::Span;
 
 #[derive(Debug, PartialEq)]
-pub struct TokenStream(Vec<Token>);
+pub struct TokenStream(pub(crate) Vec<TokenTree>);
+
+/// Why is the division into just a `Token(...)` and `DelimitedStream(...)`?
+/// Here, `Token` is a single token, such as `Ident`, `Literal`, etc. The `DelimitedStream`,
+/// in turn, stores these `Token`s separated by some kind of separator, such as `[`, `{`, `(`.
+/// For example, if we have a function definition, then first in our `TokenStream` (the structure
+/// for which this `TokenTree` is made) there will be a keyword and a function name,
+/// that is, a pair of `TokenTree::Token(...)`. Then, when we get to the opening parenthesis
+/// into which we pass the arguments to the function, we will parse all these arguments into
+/// a single `TokenTree::DelimitedStream(...)`, inside which there will be a `TokenStream`
+/// with function arguments and information about its separators, such as its kind (in our case, this is parens)
+/// and location. This is convenient because we can immediately receive a convenient token stream, which will
+/// be convenient to work on in the future. For example, our parser won't need to check where blocks
+/// open and close, and it can just work on the syntax. Of course, we can do this in a parser,
+/// but then it will be too loaded and inconvenient.
+#[derive(Debug, PartialEq)]
+pub enum TokenTree {
+    Token(Token),
+    DelimitedStream(DelimitedStream),
+}
+
+#[derive(Debug, PartialEq)]
+pub struct DelimitedStream {
+    open_delim: Span,
+    close_delim: Span,
+    delim: Delim,
+    stream: TokenStream,
+}
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Token {
@@ -46,37 +74,8 @@ pub enum TokenKind {
     OrOr,              // `||`
     Unknown,           // Any unknown token like `#` or `$`
     Eof,               // Final character in the file, aka `end of file`, `\0`
-    ZeroToken,
+    InitToken,         // Initial token
     Error(Span),
-}
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Ident {
-    span: Span,
-    sym: Symbol,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Literal {
-    kind: LiteralKind,
-    sym: Symbol,
-    span: Span,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum LiteralKind {
-    Bool,
-    Int,
-    Float,
-    Str,
-    Char,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum Delim {
-    Paren,
-    Bracket,
-    Brace,
 }
 
 impl Token {
@@ -101,17 +100,5 @@ impl Token {
             (TokenKind::And, TokenKind::And) => Some(TokenKind::AndAnd),
             (_, _) => None,
         }
-    }
-}
-
-impl Literal {
-    pub fn new(kind: LiteralKind, sym: Symbol, span: Span) -> Self {
-        Literal { kind, sym, span }
-    }
-}
-
-impl Ident {
-    pub fn new(sym: Symbol, span: Span) -> Self {
-        Ident { sym, span }
     }
 }

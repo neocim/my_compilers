@@ -4,15 +4,13 @@ mod errors;
 mod tests;
 mod token;
 
-use std::fmt::Write as _;
-
 use crate::{
-    ast::token::{
-        Delim, Ident, Literal, LiteralKind as AstLitKind, Token as AstToken,
-        TokenKind as AstTokenKind, TokenStream,
+    ast::{
+        token::{Token as AstToken, TokenKind as AstTokenKind, TokenStream},
+        Delim, Ident, Literal, LiteralKind as AstLitKind,
     },
     errors::diagnostic::{Diagnostic, DiagnosticCtxt, DiagnosticLevel},
-    span::{Pos, Span},
+    span::Span,
     symbol::{get_from_src, Symbol},
 };
 use cursor::Cursor;
@@ -31,13 +29,15 @@ impl<'src> Lexer<'src> {
     pub fn new(src: &'src str, dcx: &'src DiagnosticCtxt) -> Self {
         Self {
             src,
-            cur_tok: AstToken::new(AstTokenKind::ZeroToken, Span::default()),
+            cur_tok: AstToken::new(AstTokenKind::InitToken, Span::default()),
             dcx,
             cursor: Cursor::new(src),
         }
     }
 
-    fn advance(&mut self) -> AstToken {
+    pub fn token_stream(&mut self) -> TokenStream {}
+
+    pub fn advance(&mut self) -> AstToken {
         let token = self.next_from_cursor();
 
         if let Some(glued) = token.glue(token.kind) {
@@ -144,27 +144,5 @@ impl<'src> Lexer<'src> {
             _ => unreachable!(),
         };
         AstTokenKind::Lit(Literal::new(kind, sym, span))
-    }
-
-    fn glue(&self, left_tok: AstTokenKind) -> Option<AstTokenKind> {
-        match (left_tok, self.next_ahead().kind) {
-            // `!=`
-            (AstTokenKind::Bang, LexerTokenKind::Eq) => Some(AstTokenKind::NotEq),
-            // `==`
-            (AstTokenKind::Eq, LexerTokenKind::Eq) => Some(AstTokenKind::EqEq),
-            // `<=`
-            (AstTokenKind::LessThan, LexerTokenKind::Eq) => Some(AstTokenKind::LtEq),
-            // `>=`
-            (AstTokenKind::GreaterThan, LexerTokenKind::Eq) => Some(AstTokenKind::GtEq),
-            // `||`
-            (AstTokenKind::Or, LexerTokenKind::Or) => Some(AstTokenKind::OrOr),
-            // `&&`
-            (AstTokenKind::And, LexerTokenKind::And) => Some(AstTokenKind::AndAnd),
-            (_, _) => None,
-        }
-    }
-
-    fn next_ahead(&self) -> LexerToken {
-        self.cursor.clone().next_token()
     }
 }

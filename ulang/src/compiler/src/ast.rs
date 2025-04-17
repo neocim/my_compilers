@@ -1,5 +1,29 @@
 pub mod token;
 
+use crate::{span::Span, symbol::Symbol};
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Ident {
+    span: Span,
+    sym: Symbol,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Literal {
+    kind: LiteralKind,
+    sym: Symbol,
+    span: Span,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum LiteralKind {
+    Bool,
+    Int,
+    Float,
+    Str,
+    Char,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Punct {
     Colon,     // `:`
@@ -7,21 +31,11 @@ pub enum Punct {
     Comma,     // `,`
 }
 
-/// We can consider these to be something like reserved tokens.
-/// We do not currently support these tokens, but they may be available in the future.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub enum Invalid {
-    SigleOr, // just `|`
-}
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum Delimiter {
-    OBrace,   // `{`
-    CBrace,   // `}`
-    OParen,   // `(`
-    CParen,   // `)`
-    OBracket, // `[`
-    CBracket, // `]`
+pub enum Delim {
+    Paren,
+    Bracket,
+    Brace,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -58,4 +72,16 @@ pub enum UnOp {
     Not,   // `!`
     UnAdd, // `++`
     UnSub, // `--`
+}
+
+impl Literal {
+    pub fn new(kind: LiteralKind, sym: Symbol, span: Span) -> Self {
+        Literal { kind, sym, span }
+    }
+}
+
+impl Ident {
+    pub fn new(sym: Symbol, span: Span) -> Self {
+        Ident { sym, span }
+    }
 }
