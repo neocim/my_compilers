@@ -1,4 +1,4 @@
-use super::{Delim, Ident, Literal};
+use super::{CloseDelim, Delim, Ident, Literal, OpenDelim};
 use crate::span::Span;
 
 #[derive(Debug, PartialEq)]
@@ -41,41 +41,47 @@ pub struct Token {
 pub enum TokenKind {
     Lit(Literal),
     Ident(Ident),
-    OpenDelim(Delim),  // `(`, `[` or `{`
-    CloseDelim(Delim), // `)`, `]` or `}`
-    Comment,           // Only `//`. We dont support many lines comments like `/* Comment */`
-    Whitespace,        // Any whitespace symbol: `\n`, `\t`, ` `, etc.
-    Bang,              // `!`
-    Eq,                // `=`
-    NotEq,             // `!=`
-    EqEq,              // `==`
-    LessThan,          // `<`
-    LtEq,              // `<=`
-    GreaterThan,       // `>`
-    GtEq,              // `>=`
-    Plus,              // `+`
-    PlusPlus,          // `++`
-    Minus,             // `-`
-    MinusMinux,        // `--`
-    Slash,             // `/`
-    Percent,           // `%`
-    Star,              // `*`
-    StarEq,            // `*=`
-    PlusEq,            // `+=`
-    MinusEq,           // `-=`
-    SlashEq,           // `/=`
-    PercentEq,         // `%=`
-    Colon,             // `:`
-    SemiColon,         // `;`
-    Comma,             // `,`
-    And,               // `&`
-    AndAnd,            // `&&`
-    Or,                // `|`
-    OrOr,              // `||`
-    Unknown,           // Any unknown token like `#` or `$`
-    Eof,               // Final character in the file, aka `end of file`, `\0`
-    InitToken,         // Initial token
-    Error(Span),
+    OpenDelim(OpenDelim),   // `(`, `[` or `{`
+    CloseDelim(CloseDelim), // `)`, `]` or `}`
+    Comment,                // Only `//`. We dont support many lines comments like `/* Comment */`
+    Whitespace,             // Any whitespace symbol: `\n`, `\t`, ` `, etc.
+    Bang,                   // `!`
+    Eq,                     // `=`
+    NotEq,                  // `!=`
+    EqEq,                   // `==`
+    LessThan,               // `<`
+    LtEq,                   // `<=`
+    GreaterThan,            // `>`
+    GtEq,                   // `>=`
+    Plus,                   // `+`
+    PlusPlus,               // `++`
+    Minus,                  // `-`
+    MinusMinux,             // `--`
+    Slash,                  // `/`
+    Percent,                // `%`
+    Star,                   // `*`
+    StarEq,                 // `*=`
+    PlusEq,                 // `+=`
+    MinusEq,                // `-=`
+    SlashEq,                // `/=`
+    PercentEq,              // `%=`
+    Colon,                  // `:`
+    SemiColon,              // `;`
+    Comma,                  // `,`
+    And,                    // `&`
+    AndAnd,                 // `&&`
+    Or,                     // `|`
+    OrOr,                   // `||`
+    Unknown,                // Any unknown token like `#` or `$`
+    Eof,                    // Final character in the file, aka `end of file`, `\0`
+    InitToken,              // Initial token
+    Error,
+}
+
+impl TokenStream {
+    pub fn new(stream: Vec<TokenTree>) -> Self {
+        Self(stream)
+    }
 }
 
 impl Token {
@@ -99,6 +105,17 @@ impl Token {
             // `&&`
             (TokenKind::And, TokenKind::And) => Some(TokenKind::AndAnd),
             (_, _) => None,
+        }
+    }
+}
+
+impl DelimitedStream {
+    pub fn new(delim: Delim, open_delim: Span, close_delim: Span, stream: TokenStream) -> Self {
+        Self {
+            delim,
+            open_delim,
+            close_delim,
+            stream,
         }
     }
 }

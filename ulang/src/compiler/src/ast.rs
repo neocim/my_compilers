@@ -39,6 +39,12 @@ pub enum Delim {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
+pub struct OpenDelim(pub(crate) Delim);
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct CloseDelim(pub(crate) Delim);
+
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum AssignOp {
     Assign,    // `=`
     MulAssign, // `*=`
@@ -83,5 +89,25 @@ impl Literal {
 impl Ident {
     pub fn new(sym: Symbol, span: Span) -> Self {
         Ident { sym, span }
+    }
+}
+
+impl std::fmt::Display for OpenDelim {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.0 {
+            Delim::Paren => write!(f, "("),
+            Delim::Bracket => write!(f, "["),
+            Delim::Brace => write!(f, "{{"),
+        }
+    }
+}
+
+impl std::fmt::Display for CloseDelim {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.0 {
+            Delim::Paren => write!(f, ")"),
+            Delim::Bracket => write!(f, "]"),
+            Delim::Brace => write!(f, "}}"),
+        }
     }
 }

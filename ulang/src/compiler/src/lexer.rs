@@ -6,16 +6,21 @@ mod token;
 
 use crate::{
     ast::{
-        token::{Token as AstToken, TokenKind as AstTokenKind, TokenStream},
-        Delim, Ident, Literal, LiteralKind as AstLitKind,
+        token::{
+            DelimitedStream, Token as AstToken, TokenKind as AstTokenKind, TokenStream, TokenTree,
+        },
+        CloseDelim, Delim, Ident, Literal, LiteralKind as AstLitKind, OpenDelim,
     },
     errors::diagnostic::{Diagnostic, DiagnosticCtxt, DiagnosticLevel},
     span::Span,
     symbol::{get_from_src, Symbol},
 };
 use cursor::Cursor;
-use errors::{UnterminatedChar, UnterminatedString};
-use token::{LiteralKind as LexerLitKind, Token as LexerToken, TokenKind as LexerTokenKind};
+use errors::{
+    EofButCloseDelimIsExpected, MismatchedDelimiters, UnexpectedCloseDelim, UnterminatedChar,
+    UnterminatedString,
+};
+use token::{LiteralKind as LexerLitKind, TokenKind as LexerTokenKind};
 
 #[derive(Clone)]
 pub struct Lexer<'src> {
@@ -35,11 +40,67 @@ impl<'src> Lexer<'src> {
         }
     }
 
-    pub fn token_stream(&mut self) -> TokenStream {}
+    /// Returns the `TokenStream` using the `lexer::Cursor`. Now, if there are errors related to delimiters,
+    /// the compiler will emit diagnostic and stop compilation. We need to make a friendlier error message in the future.
+    pub fn token_stream(&mut self, is_delimited: bool) -> TokenStream {
+        let mut stream = Vec::new();
+
+        loop {
+            match self.cur_tok.kind {
+                AstTokenKind::OpenDelim(delim) => {
+                    stream.push(self.delimited_stream(delim.0));
+                }
+                AstTokenKind::CloseDelim(delim) => {
+                    if is_delimited {
+                        return TokenStream::new(stream);
+                    } else {
+                        self.dcx
+                            .emit_fatal(UnexpectedCloseDelim::new(delim), self.cur_tok.span);
+                    }
+                }
+                AstTokenKind::Eof => {
+                    if !is_delimited {
+                        return TokenStream::new(stream);
+                    } else {
+                        self.dcx
+                            .emit_fatal(EofButCloseDelimIsExpected {}, self.cur_tok.span);
+                    }
+                }
+                _ => stream.push(TokenTree::Token(self.cur_tok)),
+            }
+        }
+    }
+
+    pub fn delimited_stream(&mut self, exp_delim: Delim) -> TokenTree {
+        let open_delim_sp = self.cur_tok.span;
+        // We only call `delimited_stream()` if see delimiter, therefore, we pass `is_delimited: true`
+        let stream = self.token_stream(true);
+        let close_delim_sp = self.cur_tok.span;
+
+        match self.cur_tok.kind {
+            AstTokenKind::CloseDelim(close_delim) if close_delim.0 == exp_delim => {}
+            // Mismatched delimiters. We should raise an error
+            AstTokenKind::CloseDelim(close_delim) => {
+                self.dcx.emit_fatal(
+                    MismatchedDelimiters::new(CloseDelim(exp_delim), close_delim),
+                    close_delim_sp,
+                );
+            }
+            AstTokenKind::Eof => {}
+            // We call this metod only if we have close delimiter, then this is unreachable
+            _ => unreachable!(),
+        }
+
+        TokenTree::DelimitedStream(DelimitedStream::new(
+            exp_delim,
+            open_delim_sp,
+            close_delim_sp,
+            stream,
+        ))
+    }
 
     pub fn advance(&mut self) -> AstToken {
         let token = self.next_from_cursor();
-
         if let Some(glued) = token.glue(token.kind) {
             // Eat the token that we are glued
             self.next_from_cursor();
@@ -48,7 +109,6 @@ impl<'src> Lexer<'src> {
             self.cur_tok = token;
             return token;
         }
-
         token
     }
 
@@ -61,12 +121,14 @@ impl<'src> Lexer<'src> {
                 LexerTokenKind::Lit { kind } => self.literal(kind, token.span),
                 LexerTokenKind::Ident => self.ident(token.span),
                 LexerTokenKind::Comment => AstTokenKind::Comment,
-                LexerTokenKind::OpenParen => AstTokenKind::OpenDelim(Delim::Paren),
-                LexerTokenKind::CloseParen => AstTokenKind::CloseDelim(Delim::Paren),
-                LexerTokenKind::OpenBrace => AstTokenKind::OpenDelim(Delim::Brace),
-                LexerTokenKind::CloseBrace => AstTokenKind::CloseDelim(Delim::Brace),
-                LexerTokenKind::OpenBracket => AstTokenKind::OpenDelim(Delim::Bracket),
-                LexerTokenKind::CloseBracket => AstTokenKind::CloseDelim(Delim::Paren),
+                LexerTokenKind::OpenParen => AstTokenKind::OpenDelim(OpenDelim(Delim::Paren)),
+                LexerTokenKind::CloseParen => AstTokenKind::CloseDelim(CloseDelim(Delim::Paren)),
+                LexerTokenKind::OpenBrace => AstTokenKind::OpenDelim(OpenDelim(Delim::Brace)),
+                LexerTokenKind::CloseBrace => AstTokenKind::CloseDelim(CloseDelim(Delim::Brace)),
+                LexerTokenKind::OpenBracket => AstTokenKind::OpenDelim(OpenDelim(Delim::Bracket)),
+                LexerTokenKind::CloseBracket => {
+                    AstTokenKind::CloseDelim(CloseDelim(Delim::Bracket))
+                }
                 LexerTokenKind::Bang => AstTokenKind::Bang,
                 LexerTokenKind::Eq => AstTokenKind::Eq,
                 LexerTokenKind::LessThan => AstTokenKind::LessThan,
@@ -109,7 +171,7 @@ impl<'src> Lexer<'src> {
         if !terminated {
             self.dcx
                 .emit_err(UnterminatedString {}, DiagnosticLevel::Error, span);
-            return AstTokenKind::Error(span);
+            return AstTokenKind::Error;
         }
         let sym = Symbol::intern(get_from_src(self.src, span));
 
@@ -121,7 +183,7 @@ impl<'src> Lexer<'src> {
         if !terminated {
             self.dcx
                 .emit_err(UnterminatedChar {}, DiagnosticLevel::Error, span);
-            return AstTokenKind::Error(span);
+            return AstTokenKind::Error;
         }
         let sym = Symbol::intern(get_from_src(self.src, span));
 

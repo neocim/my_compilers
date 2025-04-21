@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, process};
 
 use super::emmiter::DynEmitter;
 use crate::span::Span;
@@ -99,6 +99,7 @@ impl<'dcx, 'msg> DiagnosticCtxt {
         }
     }
 
+    /// Emits and returns diagnostic
     pub fn emit_err(
         &'dcx self,
         err: impl IntoDiagnostic<'dcx, 'msg>,
@@ -110,6 +111,13 @@ impl<'dcx, 'msg> DiagnosticCtxt {
         err
     }
 
+    /// Emits an error and stops compilation.
+    pub fn emit_fatal(&'dcx self, err: impl IntoDiagnostic<'dcx, 'msg>, span: Span) {
+        self.emit(&self.struct_err(err, DiagnosticLevel::Error).with_span(span));
+        process::exit(1);
+    }
+
+    /// Creates a new diagnostic and returns it
     pub fn struct_err(
         &'dcx self,
         err: impl IntoDiagnostic<'dcx, 'msg>,
